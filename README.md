@@ -52,10 +52,71 @@
   - Node.js : v23.6.0
   - npm : 10.9.2
 ##
-### 4. **빌드방법**
+### 4. **Node.js 설치방법**
+- Windows에서 Node.js 설치
+  1. Node.js 공식 다운로드 페이지로 이동합니다.
+  2. LTS 또는 Current 버전 중에서 선택하여 다운로드합니다.
+  3. 다운로드한 .msi 설치 파일을 실행합니다.
+  4. 설치 마법사에서 Next를 클릭하고, 기본 설정을 그대로 선택하여 설치를 진행합니다.
+  5. 설치 완료 후, 명령 프롬프트나 PowerShell을 열고 node -v와 npm -v 명령어를 입력하여 Node.js와 npm이 정상적으로 설치되었는지 확인합니다.
+```bash
+> node -v
+> npm -v
+```
+- macOS에서 Node.js 설치(Homebrew)  
+1. 터미널을 열고 Homebrew가 설치되어 있지 않다면 아래 명령어로 Homebrew를 설치합니다.
+2. Homebrew가 설치된 후, 아래 명령어로 Node.js를 설치합니다.
+`brew install node`
+3. 설치 후, 아래 명령어로 Node.js와 npm 버전을 확인하여 설치가 잘 되었는지 확인합니다.
+```bash
+node -v
+npm -v
+```
+- Linux(Ubuntu)에서 설치
+1. 터미널을 열고, NodeSource의 설치 스크립트를 사용하여 Node.js를 설치합니다. 예를 들어, 최신 버전인 Node.js 23을 설치하려면:
+```bash
+$ curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+$ sudo apt-get install -y nodejs
+```
+2. 설치 후, 아래 명령어로 Node.js와 npm버전을 확인합니다.
+```baseh
+node -v
+npm -v
+```
+
+- WSL (Windows Subsystem for Linux)에서 Node.js 설치
+WSL2에서 Node.js를 설치하려면, Ubuntu와 같은 리눅스 배포판을 사용하고 위의 리눅스 방법에 따라 설치할 수 있습니다.
+1.WSL2 터미널을 열고 아래 명령어로 Node.js를 설치합니다.
+```bash
+sudo apt update
+sudo apt install nodejs npm
+```
+- nvm (Node Version Manager) 사용
+nvm을 사용하면 여러 버전의 Node.js를 쉽게 관리하고, 버전을 전환할 수 있습니다. nvm은 Windows에서 별도의 도구인 nvm-windows를 사용합니다.
+1. nvm-windows
+  - 웹페이지 : https://github.com/coreybutler/nvm-windows/releases
+  - 사용법 
 ```shell
+> nvm list
+    23.6.0
+    22.13.0
+  * 20.18.1 (Currently using 64-bit executable)
+    18.16.1
+```
+  - 설치한 버전을 사용 명령어
+```shell
+> nvm use <버전>
+> nvm use 18.16.1
+```
+  - 설치한 버전을 삭제
+```shell
+> nvm uninstall <버전>
+```
+##
+### 5. **빌드방법**
+```bash
 $ git clone https://github.com/XDBuilder/XDViewer.git
-$ cd XDViewer.git
+$ cd XDViewer
 $ npm install
 $ npm start
 ```
