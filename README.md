@@ -69,8 +69,8 @@
 `brew install node`
   - 설치 후, 아래 명령어로 Node.js와 npm 버전을 확인하여 설치가 잘 되었는지 확인합니다.
 ```bash
-node -v
-npm -v
+$ node -v
+$ npm -v
 ```
 - Linux(Ubuntu)에서 설치
   - 터미널을 열고, NodeSource의 설치 스크립트를 사용하여 Node.js를 설치합니다. 예를 들어, 최신 버전인 Node.js 23을 설치하려면:
@@ -80,16 +80,16 @@ $ sudo apt-get install -y nodejs
 ```
   - 설치 후, 아래 명령어로 Node.js와 npm버전을 확인합니다.
 ```baseh
-node -v
-npm -v
+$ node -v
+$ npm -v
 ```
 
 - WSL (Windows Subsystem for Linux)에서 Node.js 설치
 WSL2에서 Node.js를 설치하려면, Ubuntu와 같은 리눅스 배포판을 사용하고 위의 리눅스 방법에 따라 설치할 수 있습니다.
   - WSL2 터미널을 열고 아래 명령어로 Node.js를 설치합니다.
 ```bash
-sudo apt update
-sudo apt install nodejs npm
+$ sudo apt update
+$ sudo apt install nodejs npm
 ```
 - nvm (Node Version Manager) 사용
 nvm을 사용하면 여러 버전의 Node.js를 쉽게 관리하고, 버전을 전환할 수 있습니다. nvm은 Windows에서 별도의 도구인 nvm-windows를 사용합니다.
