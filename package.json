@@ -1,0 +1,38 @@
+{
+  "name": "XDViewer",
+  "version": "1.0.0",
+  "description": "An example Electron app.",
+  "main": "index.js",
+  "author": {
+    "name": "WooJin Lee",
+    "email": "iyeti78@egiskorea.com"
+  },
+  "homepage": "https://egiskorea.com",
+  "devDependencies": {
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8"
+  },
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.egiskorea.xdviewer",
+    "productName": "XDViewer",
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": [
+        "appImage"
+      ],
+      "defaultArch": "x64",
+      "category": "Utility",
+      "icon": "build/icons/icon.png"
+    }
+  }
+}
