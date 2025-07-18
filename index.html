@@ -119,6 +119,8 @@
             // 파일 경로에서 file:/// 접두어 제거
             if (filePath.startsWith("file:///")) {
                 filePath = filePath.replace("file:///", "");
+            }else if(filePath.startsWith("File:///")) {
+                filePath = filePath.replace("File:///", "");
             }
             filePath = filePath.replace(/\\/g, '/'); // 역슬래시를 슬래시로 변경
 
@@ -129,8 +131,8 @@
                 url: filePath,  // 첫 번째 파일 경로를 사용
                 autoMove: true,
             });
-            Module.getTerrain().demRate = 0.001; // DEM 축소 비율 설정
-            layer.setPointCloudPointSize(parseFloat(0.1)); // 포인트 클라우드 크기 설정
+            //Module.getTerrain().demRate = 0.001; // DEM 축소 비율 설정
+            layer.setPointCloudPointSize(0.01); // 포인트 클라우드 크기 설정
 
             // 새 버튼 생성
             const newButton = document.createElement('button');
@@ -201,7 +203,7 @@
                     },
                     defaultKey: "DFG~EpIREQDmdJe1E9QpdBca#FBSDJFmdzHoe(fB4!e1E(JS1I==" // 기본 키 설정
                 });
-
+/*
                 // 기본 타일 레이어 설정
                 var layerSimple = Module.getTileLayerList().createXDServerLayer({
                     url: "https://xdworld.vworld.kr",
@@ -217,6 +219,7 @@
                 Module.getMap().setSimpleMode(true);
                 Module.getViewCamera().setLocation(new Module.JSVector3D(126.9, 37.5, 300.0)); // 초기 카메라 위치 설정
                 Module.getViewCamera().setTilt(30); // 카메라 기울기 설정
+*/                
             }
         };
 

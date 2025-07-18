@@ -20,8 +20,8 @@ function createWindow() {
     });
 
     // 브라우저 창에 HTML 파일 로드
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));   
-    
+    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
     // 기본 F12 키 동작 비활성화 (DevTools 토글 방지)
     mainWindow.webContents.on('before-input-event', (event, input) => {
         if (input.key === 'F12') {
@@ -34,16 +34,7 @@ function createWindow() {
         }
     });
 
-    // DevTools가 열렸을 때의 처리
-    mainWindow.webContents.on('devtools-opened', () => {
-        const devToolsWindow = BrowserWindow.getAllWindows().find(win => win.webContents === mainWindow.webContents.devToolsWebContents);
-        if (devToolsWindow) {
-            // DevTools 창 크기 조정
-            const [x, y, width, height] = devToolsWindow.getBounds();
-            console.log(x, y, width, height);
-            devToolsWindow.setBounds({ x, y, width: width * 2, height });
-        }
-    });
+
 
     // globalShortcut을 사용하여 F12 단축키 동작 정의
     globalShortcut.register('F12', () => {
@@ -102,10 +93,11 @@ function handleTilesetJson(filePath) {
     let layerList = new Module.JSLayerList(true);
     // 새로운 레이어 생성
     let layer = layerList.createLayer("3DTILES_LAYER", Module.ELT_3DTILES);
-    
+
     // 3D 타일 데이터 가져오기
     layer.import3DTiles({
         url: filePath, // 파일 경로 사용
         autoMove: true, // 자동 이동 활성화
+        offsetZ: "50.0"
     });
 }
