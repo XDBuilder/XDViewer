@@ -1,5 +1,6 @@
 const { app, globalShortcut, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 let splash;
@@ -18,6 +19,7 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js') // 프리로드 스크립트 경로
         }
     });
+    
 
     // 브라우저 창에 HTML 파일 로드
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
@@ -49,7 +51,10 @@ function createWindow() {
     // 파일 경로 선택 처리
     ipcMain.on('open-file-dialog', async (event) => {
         const result = await dialog.showOpenDialog(mainWindow, {
-            properties: ['openFile'] // 파일 열기 다이얼로그 속성
+            properties: ['openFile'],
+            filters: [
+                { name: 'JSON/GeoJSON Files', extensions: ['json', 'geojson'] }
+            ]
         });
 
         if (!result.canceled && result.filePaths.length > 0) {
@@ -101,3 +106,7 @@ function handleTilesetJson(filePath) {
         offsetZ: "50.0"
     });
 }
+
+ipcMain.handle('read-geojson', async (event, filePath) => {
+  return await fs.promises.readFile(filePath, 'utf-8');
+});
