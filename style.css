@@ -31,7 +31,8 @@
      /* 버튼을 한 줄에 하나씩 배치 */
      width: auto;
      /* 버튼 너비 자동 조정 */
-     margin-bottom: 8px;
+     margin-top: 4px;
+     margin-bottom: 4px;
      /* 버튼 간 간격 설정 */
      background-color: #006B8F;
      /* 진한 바다색 배경 */
@@ -82,121 +83,120 @@
      /* 드래그 시 외곽선 색상 변경 */
  }
 
-.layer-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 4px;
-    gap: 6px;
-}
-.layer-item button {
-    margin-left: 8px;
-    color: red;
-    border: none;
-    background: none;
-    cursor: pointer;
-}
+ .layer-item {
+     display: flex;
+     align-items: center;
+     margin-bottom: 4px;
+     gap: 6px;
+ }
 
-.layer-item span {
-    background: rgba(255, 255, 255, 0.5);
-    color: #222;
-    border-radius: 4px;
-    padding: 0 8px;
-    font-size: 13px;
-    font-weight: 500;
-    margin: 0;
-    display: block;    
-    text-align: left;
-    box-shadow: none;
-    height: 18px;
-    line-height: 18px;
-    letter-spacing: 0.5px;
-    transition: background-color 0.2s ease;
-    flex: 1 1 auto;
-}
+ .layer-item button {
+     color: red;
+     border: none;
+     background: none;
+     cursor: pointer;
+ }
 
-.layer-item span:hover {
-    background-color: #f0f0f0;
-}
+ .layer-item span {
+     background: rgba(255, 255, 255, 0.5);
+     color: #222;
+     border-radius: 4px;
+     padding: 0 8px;
+     font-size: 13px;
+     font-weight: 500;
+     margin: 0;
+     display: block;
+     text-align: left;
+     box-shadow: none;
+     height: 18px;
+     line-height: 18px;
+     letter-spacing: 0.5px;
+     transition: background-color 0.2s ease;
+     flex: 1 1 auto;
+ }
 
-.layer-item button {
-    margin-left: 8px;
-    color: #fff;
-    background-color: #e74c3c;
-    border: none;
-    border-radius: 3px;
-    padding: 0;
-    font-size: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: none;
-    transition: background 0.2s;
-}
+ .layer-item span:hover {
+     background-color: #f0f0f0;
+ }
 
-.layer-item button:hover {
-    background-color: #c0392b;
-}
+ .layer-item button {
+     color: #fff;
+     background-color: #e74c3c;
+     border: none;
+     border-radius: 3px;
+     padding: 0;
+     font-size: 10px;
+     font-weight: bold;
+     cursor: pointer;
+     width: 18px;
+     height: 18px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     box-shadow: none;
+     transition: background 0.2s;
+ }
 
-.layer-item input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin: 0 auto;
-    accent-color: #006B8F;
-    display: block;
-}
+ .layer-item button:hover {
+     background-color: #c0392b;
+ }
 
-/* ?, ?, ? ??? ??? */
-.layer-item-icon {
-    width: 16px;
-    height: 16px;
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 4px;
-}
+ .layer-item input[type="checkbox"] {
+     width: 18px;
+     height: 18px;
+     margin: 0 auto;
+     accent-color: #006B8F;
+     display: block;
+ }
 
-.layer-item-icon.point {
-    background-color: #e74c3c;
-    position: relative;
-}
+ /* ?, ?, ? ??? ??? */
+ .layer-item-icon {
+     width: 16px;
+     height: 16px;
+     border-radius: 2px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     margin: 0 4px;
+ }
 
-.layer-item-icon.point::after {
-    content: '';
-    width: 6px;
-    height: 6px;
-    background-color: white;
-    border-radius: 50%;
-    position: absolute;
-}
+ .layer-item-icon.point {
+     background-color: #e74c3c;
+     position: relative;
+ }
 
-.layer-item-icon.line {
-    background-color: #3498db;
-    position: relative;
-}
+ .layer-item-icon.point::after {
+     content: '';
+     width: 6px;
+     height: 6px;
+     background-color: white;
+     border-radius: 50%;
+     position: absolute;
+ }
 
-.layer-item-icon.line::after {
-    content: '';
-    width: 10px;
-    height: 2px;
-    background-color: white;
-    position: absolute;
-}
+ .layer-item-icon.line {
+     background-color: #3498db;
+     position: relative;
+ }
 
-.layer-item-icon.polygon {
-    background-color: #2ecc71;
-    position: relative;
-}
+ .layer-item-icon.line::after {
+     content: '';
+     width: 10px;
+     height: 2px;
+     background-color: white;
+     position: absolute;
+ }
 
-.layer-item-icon.polygon::after {
-    content: '';
-    width: 8px;
-    height: 8px;
-    background-color: white;
-    position: absolute;
-    transform: rotate(45deg);
-}
+ .layer-item-icon.polygon {
+     background-color: #2ecc71;
+     position: relative;
+ }
+
+ .layer-item-icon.polygon::after {
+     content: '';
+     width: 8px;
+     height: 8px;
+     background-color: white;
+     position: absolute;
+     transform: rotate(45deg);
+ }

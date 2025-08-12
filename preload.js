@@ -18,5 +18,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         })
         .catch(err => reject(err));
     });
+  },
+  readMeta: (filePath) => {
+    return ipcRenderer.invoke('read-meta', filePath);
   }
 });

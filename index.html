@@ -83,7 +83,7 @@
 
                     // x 제거 버튼
                     const removeBtn = document.createElement('button');
-                    removeBtn.textContent = 'x';
+                    removeBtn.textContent = "X";
                     removeBtn.addEventListener('click', () => {
                         Module.XDEMapRemoveLayer(label.textContent);
                         layerItem.remove();
@@ -97,7 +97,7 @@
                     document.getElementById('interface').appendChild(layerItem);
                     index++;
                 } else if (filePath.endsWith('.geojson')) {
-                    const fileName = filePath.split(/[\\/]/).pop().replace('.geojson', '');
+                    const fileName = filePath.split(/[\/]/).pop().replace('.geojson', '');
                     window.electronAPI.readGeoJSON(filePath).then(function (data) {
                         if (!data || !data.features || data.features.length === 0) {
                             alert("GeoJSON에 feature가 없습니다.");
@@ -140,76 +140,78 @@
                                 break;
                         }
                         // 새 레이어 UI 생성
-                    const layerItem = document.createElement('div');
-                    layerItem.className = 'layer-item';
+                        const layerItem = document.createElement('div');
+                        layerItem.className = 'layer-item';
 
-                    // 체크박스
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = true;
-                    checkbox.addEventListener('change', () => {
-                        layer.setVisible(checkbox.checked);
-                    });
+                        // 체크박스
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.checked = true;
+                        checkbox.addEventListener('change', () => {
+                            layer.setVisible(checkbox.checked);
+                        });
 
-                    // geometry 타입에 따른 아이콘
-                    let iconElement = null;
-                    if (type === "Point") {
-                        // 지도용: getPointMarkerIcon(fileName, randomColor)
-                        // 리스트용: getPointMarkerIcon(fileName, randomColor, true)
-                        const iconUrl = getPointMarkerIcon(fileName, randomColor, true);
-                        iconElement = document.createElement('img');
-                        iconElement.src = iconUrl;
-                        iconElement.style.width = '12px';
-                        iconElement.style.height = '12px';
-                        iconElement.style.margin = '0 4px';
-                    } else if (type === "LineString" || type === "MultiLineString") {
-                        iconElement = document.createElement('div');
-                        iconElement.style.width = '16px';
-                        iconElement.style.height = '16px';
-                        iconElement.style.background = 'transparent';
-                        iconElement.style.position = 'relative';
-                        // 선 색상 적용
-                        iconElement.innerHTML = `<div style="position:absolute;top:7px;left:2px;width:12px;height:2px;background:${randomColor};border-radius:1px;"></div>`;
-                    } else if (type === "Polygon" || type === "MultiPolygon") {
-                        iconElement = document.createElement('div');
-                        iconElement.style.width = '16px';
-                        iconElement.style.height = '16px';
-                        iconElement.style.background = randomColor;
-                        iconElement.style.borderRadius = '2px';
-                        iconElement.style.margin = '0 4px';
-                    }
+                        // geometry 타입에 따른 아이콘
+                        let iconElement = null;
+                        if (type === "Point") {
+                            // 지도용: getPointMarkerIcon(fileName, randomColor)
+                            // 리스트용: getPointMarkerIcon(fileName, randomColor, true)
+                            const iconUrl = getPointMarkerIcon(fileName, randomColor, true);
+                            iconElement = document.createElement('img');
+                            iconElement.src = iconUrl;
+                            iconElement.style.width = '12px';
+                            iconElement.style.height = '12px';
+                            iconElement.style.margin = '0 4px';
+                        } else if (type === "LineString" || type === "MultiLineString") {
+                            iconElement = document.createElement('div');
+                            iconElement.style.width = '16px';
+                            iconElement.style.height = '16px';
+                            iconElement.style.background = 'transparent';
+                            iconElement.style.position = 'relative';
+                            // 선 색상 적용
+                            iconElement.innerHTML = `<div style="position:absolute;top:7px;left:2px;width:12px;height:2px;background:${randomColor};border-radius:1px;"></div>`;
+                        } else if (type === "Polygon" || type === "MultiPolygon") {
+                            iconElement = document.createElement('div');
+                            iconElement.style.width = '16px';
+                            iconElement.style.height = '16px';
+                            iconElement.style.background = randomColor;
+                            iconElement.style.borderRadius = '2px';
+                            iconElement.style.margin = '0 4px';
+                        }
 
-                    // 아이콘 div 생성
-                    const iconDiv = document.createElement('div');
-                    iconDiv.className = 'layer-item-icon ' + (type === "Point" ? 'point' : type === "LineString" || type === "MultiLineString" ? 'line' : 'polygon');
+                        // 아이콘 div 생성
+                        const iconDiv = document.createElement('div');
+                        iconDiv.className = 'layer-item-icon ' + (type === "Point" ? 'point' : type === "LineString" || type === "MultiLineString" ? 'line' : 'polygon');
 
-                    // 레이어 이름
-                    const label = document.createElement('span');
-                    label.textContent = fileName;
-                    label.style.cursor = 'pointer'; // 클릭 가능함을 표시
-                    label.addEventListener('click', () => {
-                        moveCameraToLayer(layer)
-                    });
+                        // 레이어 이름
+                        const label = document.createElement('span');
+                        label.textContent = fileName;
+                        label.style.cursor = 'pointer'; // 클릭 가능함을 표시
+                        label.addEventListener('click', () => {
+                            moveCameraToLayer(layer)
+                        });
 
-                    // x 제거 버튼
-                    const removeBtn = document.createElement('button');
-                    removeBtn.textContent = 'x';
-                    removeBtn.addEventListener('click', () => {
-                        Module.XDEMapRemoveLayer(label.textContent);
-                        layerItem.remove();
-                        mouseOverInterface(false);
-                    });
+                        // x 제거 버튼
+                        const removeBtn = document.createElement('button');
+                        removeBtn.textContent = "X";
+                        removeBtn.addEventListener('click', () => {
+                            Module.XDEMapRemoveLayer(label.textContent);
+                            layerItem.remove();
+                            mouseOverInterface(false);
+                        });
 
-                    // 조립
-                    layerItem.appendChild(checkbox);
-                    layerItem.appendChild(iconDiv);
-                    layerItem.appendChild(label);
-                    layerItem.appendChild(removeBtn);
-                    document.getElementById('interface').appendChild(layerItem);
-                    index++;
+                        // 조립
+                        layerItem.appendChild(checkbox);
+                        layerItem.appendChild(iconDiv);
+                        layerItem.appendChild(label);
+                        layerItem.appendChild(removeBtn);
+                        document.getElementById('interface').appendChild(layerItem);
+                        index++;
                     }).catch(err => {
                         alert("GeoJSON 파일을 읽을 수 없습니다: " + err);
                     });
+                } else if (filePath.endsWith('.meta')) {
+                    loadMetaLayer(filePath);
                 }
             });
         });
@@ -219,7 +221,8 @@
 
             window.electronAPI.openFileDialog({
                 filters: [
-                    { name: 'JSON/GeoJSON Files', extensions: ['json', 'geojson'] }
+                    { name: 'JSON/GeoJSON Files', extensions: ['json', 'geojson'] },
+                    { name: 'Layer', extensions: ['meta']}
                 ],
                 properties: ['openFile']
             }); // 메인 프로세스의 파일 선택 다이얼로그 호출
@@ -352,20 +355,20 @@
                 let feature = features[i];
                 let coords = feature.geometry.coordinates;
                 if (!Array.isArray(coords) || coords.length < 2) continue;
-if (!pointIcon) {
-				console.error("아이콘 생성 실패");
-				return;
-			}
+                if (!pointIcon) {
+                    console.error("아이콘 생성 실패");
+                    return;
+                }
                 let id = feature.id || "GEOJSON_POINT_" + i;
                 let lon = coords[0];
                 let lat = coords[1];
                 let alt = coords.length >= 3 ? coords[2] : altitude;
 
                 let point = Module.createPoint(id);
-                point.setPosition(new Module.JSVector3D(lon, lat, alt+1.5));
+                point.setPosition(new Module.JSVector3D(lon, lat, alt + 1.5));
                 point.setIcon(pointIcon)
-                
-                
+
+
                 layer.addObject(point, 0);
             }
             layer.rebuildObjectLayer();
@@ -387,7 +390,7 @@ if (!pointIcon) {
                     partList.addItem(geometry.coordinates.length);
                     geometry.coordinates.forEach(coord => {
                         const x = coord[0], y = coord[1], z = coord[2] ?? altitude;
-                        vertexList.push(new Module.JSVector3D(x, y, z+1.5));
+                        vertexList.push(new Module.JSVector3D(x, y, z + 1.5));
                     });
                 }
                 else if (geometry.type === "MultiLineString") {
@@ -395,7 +398,7 @@ if (!pointIcon) {
                         partList.add(part.length);
                         for (const coord of part) {
                             const x = coord[0], y = coord[1], z = coord[2] ?? altitude;
-                            vertexList.push(new Module.JSVector3D(x, y, z+1.5));
+                            vertexList.push(new Module.JSVector3D(x, y, z + 1.5));
                         }
                     }
                 }
@@ -440,7 +443,7 @@ if (!pointIcon) {
             const outerRing = rings[0];
             outerRing.forEach(coord => {
                 const x = coord[0], y = coord[1], z = coord[2] ?? altitude;
-                allVertices.add(new Module.JSVector3D(x, y, z+1.5));
+                allVertices.add(new Module.JSVector3D(x, y, z + 1.5));
             });
 
             const style = new Module.JSPolygonStyle();
@@ -456,7 +459,7 @@ if (!pointIcon) {
         function colorStringToRGB(rgbaStr) {
             // 예: "rgba(123, 234, 45, 1.0)" → [123, 234, 45]
             const matches = rgbaStr.match(/\d+(\.\d+)?/g);
-            if (!matches || matches.length < 3) return [0,0,0];
+            if (!matches || matches.length < 3) return [0, 0, 0];
             return [parseInt(matches[0]), parseInt(matches[1]), parseInt(matches[2])];
         }
 
@@ -487,8 +490,81 @@ if (!pointIcon) {
             return null;
         }
 
-       
-        
+        function loadMetaLayer(filePath) {
+            window.electronAPI.readMeta(filePath)
+                .then(data => {
+                    try {
+                        
+                        const jsonData = JSON.parse(data);
+                        const layerName = jsonData['name'];
+                        const layerPath = jsonData['path'];
+                        const layerType = jsonData['type'];
+                        const minLon = jsonData['area']['min']['lon'];
+                        const maxLon = jsonData['area']['max']['lon'];
+                        const minLat = jsonData['area']['min']['lat'];
+                        const maxLat = jsonData['area']['max']['lat'];
+                        let cenLon = (minLon+maxLon)/2;
+                        let cenLat = (minLat+maxLat)/2;
+                        
+                        let layer = null;
+
+                        
+                        let layerList = new Module.JSLayerList(false);
+                        Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, 11, 0, 17);                                
+                        layer = layerList.nameAtLayer(layerName);
+                        Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
+                        
+
+                        if (layer!=null) {
+                            console.log(layer);
+                            const layerItem = document.createElement('div');
+                            layerItem.className = 'layer-item';
+
+                            // 체크박스
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = true;
+                            checkbox.addEventListener('change', () => {
+                                layer.setVisible(checkbox.checked);
+                            });
+
+                            // 레이어 이름
+                            const label = document.createElement('span');
+                            label.textContent = layerName;
+                            label.style.cursor = 'pointer'; // 클릭 가능함을 표시
+                            label.addEventListener('click', () => {
+                                // 레이어 클릭시 동작
+                            });
+
+                            // x 제거 버튼
+                            const removeBtn = document.createElement('button');
+                            removeBtn.textContent = 'X';
+                            removeBtn.addEventListener('click', () => {
+                                Module.XDEMapRemoveLayer(label.textContent);
+                                layerItem.remove();
+                                mouseOverInterface(false);
+                            });
+
+                            // 조립
+                            layerItem.appendChild(checkbox);
+                            layerItem.appendChild(label);
+                            layerItem.appendChild(removeBtn);
+                            document.getElementById('interface').appendChild(layerItem);
+                            index++;
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse .meta file as JSON:", e);
+                        alert(".meta 파일을 JSON으로 파싱하는데 실패했습니다.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to read .meta file:", err);
+                    alert(".meta 파일을 읽는데 실패했습니다.");
+                });
+        }
+
+
+
     </script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 </body>

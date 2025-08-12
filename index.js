@@ -1,6 +1,8 @@
 const { app, globalShortcut, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const jschardet = require('jschardet');
+const iconv = require('iconv-lite');
 
 let mainWindow;
 let splash;
@@ -53,7 +55,7 @@ function createWindow() {
         const result = await dialog.showOpenDialog(mainWindow, {
             properties: ['openFile'],
             filters: [
-                { name: 'JSON/GeoJSON Files', extensions: ['json', 'geojson'] }
+                { name: 'JSON/GeoJSON Files', extensions: ['json', 'geojson', 'meta'] }
             ]
         });
 
@@ -90,23 +92,18 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit(); // macOS가 아닌 경우 앱 종료
 });
 
-/** tileset.json 파일 처리 함수 */
-function handleTilesetJson(filePath) {
-    console.log(filePath); // 파일 경로 출력
-
-    // 레이어 목록 생성
-    let layerList = new Module.JSLayerList(true);
-    // 새로운 레이어 생성
-    let layer = layerList.createLayer("3DTILES_LAYER", Module.ELT_3DTILES);
-
-    // 3D 타일 데이터 가져오기
-    layer.import3DTiles({
-        url: filePath, // 파일 경로 사용
-        autoMove: true, // 자동 이동 활성화
-        offsetZ: "50.0"
-    });
-}
 
 ipcMain.handle('read-geojson', async (event, filePath) => {
-  return await fs.promises.readFile(filePath, 'utf-8');
+    return await fs.promises.readFile(filePath, 'utf-8');
+});
+
+ipcMain.handle('read-meta', async (event, filePath) => {
+    const fileBuffer = await fs.promises.readFile(filePath);
+    const detected = jschardet.detect(fileBuffer);
+
+    if (detected.encoding === 'EUC-KR') {
+        return iconv.decode(fileBuffer, 'EUC-KR');
+    } else {
+        return fileBuffer.toString(detected.encoding);
+    }
 });
