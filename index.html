@@ -503,14 +503,15 @@
                         const maxLon = jsonData['area']['max']['lon'];
                         const minLat = jsonData['area']['min']['lat'];
                         const maxLat = jsonData['area']['max']['lat'];
+                        const minLv = jsonData['level']['min'];
+                        const maxLv = jsonData['level']['max'];
                         let cenLon = (minLon+maxLon)/2;
                         let cenLat = (minLat+maxLat)/2;
                         
                         let layer = null;
-
                         
                         let layerList = new Module.JSLayerList(false);
-                        Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, 11, 0, 17);                                
+                        Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, 11, minLv, maxLv);
                         layer = layerList.nameAtLayer(layerName);
                         Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
                         
