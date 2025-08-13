@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const fs = require('fs');
 
 // 렌더러에서 메인 프로세스 호출 및 결과 받기
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -21,5 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   readMeta: (filePath) => {
     return ipcRenderer.invoke('read-meta', filePath);
+  },
+  readJsonFile: (path) => {
+    const jsonStr = fs.readFileSync(path, 'utf8');
+    return JSON.parse(jsonStr);
   }
 });

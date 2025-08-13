@@ -48,6 +48,8 @@
                 filePath = filePath.replace(/\\/g, '/'); // 역슬래시를 슬래시로 변경
 
                 if (filePath.endsWith('tileset.json')) {
+                    
+
                     // tileset.json 파일이면 3DTILES 레이어로 추가
                     let layerList = new Module.JSLayerList(true);
                     // 상위 폴더명 추출
@@ -78,7 +80,11 @@
                     label.textContent = parentFolder;
                     label.style.cursor = 'pointer'; // 클릭 가능함을 표시
                     label.addEventListener('click', () => {
-                        // 레이어 클릭시 동작
+                        const jsonData = window.electronAPI.readJsonFile(filePath);
+                        var trs = jsonData['root']['transform'];
+                        var lla = ecefToLla(trs[12], trs[13], trs[14]);
+                        Module.getViewCamera().move(new Module.JSVector3D(lla.lonDeg, lla.latDeg, lla.h + 1000), 89.9, 0, 0);
+
                     });
 
                     // x 제거 버튼
@@ -110,7 +116,7 @@
             window.electronAPI.openFileDialog({
                 filters: [
                     { name: 'JSON/GeoJSON Files', extensions: ['json', 'geojson'] },
-                    { name: 'Layer', extensions: ['meta']}
+                    { name: 'Layer', extensions: ['meta'] }
                 ],
                 properties: ['openFile']
             }); // 메인 프로세스의 파일 선택 다이얼로그 호출
@@ -186,58 +192,9 @@
         script.src = "https://cdn.xdworld.kr/latest/XDWorldEM.js";
         document.body.appendChild(script);
 
-        function loadGeoJSONLayer(filePath) {
-            // 파일명에서 레이어 이름 추출
-            const fileName = filePath.split(/[\\/]/).pop().replace('.geojson', '');
-            $.getJSON(filePath, function (data) {
-                if (!data || !data.features || data.features.length === 0) {
-                    alert("GeoJSON에 feature가 없습니다.");
-                    return;
-                }
-                const type = data.features[0].geometry.type;
-                const layerList = new Module.JSLayerList(true);
-                let layer = null;
-                switch (type) {
-                    case "Point":
-                        layer = layerList.createLayer(fileName, Module.ELT_3DPOINT);
-                        break;
-                    case "LineString":
-                    case "MultiLineString":
-                        layer = layerList.createLayer(fileName, Module.ELT_3DLINE);
-                        break;
-                    case "Polygon":
-                    case "MultiPolygon":
-                        layer = layerList.createLayer(fileName, Module.ELT_POLYHEDRON);
-                        break;
-                    default:
-                        alert("지원하지 않는 geometry type: " + type);
-                        return;
-                }
-                // 랜더러에서 파싱된 데이터 사용
-                const randomColor = 'rgba(' + Math.floor(Math.random() * 256) + ',' +
-                    Math.floor(Math.random() * 256) + ',' +
-                    Math.floor(Math.random() * 256) + ', 1.0)';
-                switch (type) {
-                    case "Point":
-                        createPointObjects(layer, data.features, 0.0, randomColor);
-                        break;
-                    case "LineString":
-                    case "MultiLineString":
-                        createLineObjects(layer, data.features, 0.0, randomColor);
-                        break;
-                    case "Polygon":
-                    case "MultiPolygon":
-                        createPolygonObjects(layer, data.features, 0.0, randomColor);
-                        break;
-                }
-                // UI에 레이어 추가(체크박스 등)
-                // ... (원하는 UI 코드 추가)
-            });
-        }
-
         function createPointObjects(layer, features, altitude, color) {
             var layerName = layer.getName();
-            var pointIcon = getPointMarkerIcon(layerName, color);
+            var pointIcon = getMarkerIcon(layerName, color, false, 0);
 
             for (let i = 0; i < features.length; i++) {
                 let feature = features[i];
@@ -351,22 +308,44 @@
             return [parseInt(matches[0]), parseInt(matches[1]), parseInt(matches[2])];
         }
 
-        function getPointMarkerIcon(_id, _color, returnDataUrl) {
+        function getMarkerIcon(_id, _color, returnDataUrl, type) {
             var canvas = document.createElement('canvas');
-            var size = 12;
+            var size = 16;
             canvas.width = size;
             canvas.height = size;
 
             var ctx = canvas.getContext('2d');
-            ctx.beginPath();
-            ctx.arc(size / 2, size / 2, size / 2 - 0.5, 0, 2 * Math.PI, false);
-            ctx.fillStyle = "white";
-            ctx.fill();
 
-            ctx.beginPath();
-            ctx.arc(size / 2, size / 2, size / 2 - 2, 0, 2 * Math.PI, false);
-            ctx.fillStyle = _color;
-            ctx.fill();
+            if (type == 0) {
+                // 점
+                ctx.beginPath();
+                ctx.arc(size / 2, size / 2, size / 4, 0, 2 * Math.PI, false);
+                ctx.fillStyle = _color;
+                ctx.fill();
+            } else if (type == 1) {
+                // 선
+                ctx.beginPath();
+                ctx.moveTo(0, size / 2);
+                ctx.lineTo(size, size / 2);
+                ctx.strokeStyle = _color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                // 면
+                ctx.beginPath();
+                ctx.moveTo(2, 2);
+                ctx.lineTo(size - 2, 2);
+                ctx.lineTo(size - 2, size - 2);
+                ctx.lineTo(2, size - 2);
+                ctx.closePath();
+
+                ctx.fillStyle = _color;
+                ctx.fill();
+                ctx.strokeStyle = "#FFFFFF"; // 테두리 색 (옵션)
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
 
             if (returnDataUrl) {
                 return canvas.toDataURL();
@@ -377,129 +356,173 @@
             }
             return null;
         }
+
+
+
         function loadGeojsonLayer(filePath) {
             const fileName = filePath.split(/[\/]/).pop().replace('.geojson', '');
-                window.electronAPI.readGeoJSON(filePath).then(function (data) {
-                    if (!data || !data.features || data.features.length === 0) {
-                        alert("GeoJSON에 feature가 없습니다.");
+            window.electronAPI.readGeoJSON(filePath).then(function (data) {
+                if (!data || !data.features || data.features.length === 0) {
+                    alert("GeoJSON에 feature가 없습니다.");
+                    return;
+                }
+                const type = data.features[0].geometry.type;
+                const layerList = new Module.JSLayerList(true);
+                let layer = null;
+                switch (type) {
+                    case "Point":
+                        layer = layerList.createLayer(fileName, Module.ELT_3DPOINT);
+                        break;
+                    case "LineString":
+                    case "MultiLineString":
+                        layer = layerList.createLayer(fileName, Module.ELT_3DLINE);
+                        break;
+                    case "Polygon":
+                    case "MultiPolygon":
+                        layer = layerList.createLayer(fileName, Module.ELT_POLYHEDRON);
+                        break;
+                    default:
+                        alert("지원하지 않는 geometry type: " + type);
                         return;
-                    }
-                    const type = data.features[0].geometry.type;
-                    const layerList = new Module.JSLayerList(true);
-                    let layer = null;
-                    switch (type) {
-                        case "Point":
-                            layer = layerList.createLayer(fileName, Module.ELT_3DPOINT);
-                            break;
-                        case "LineString":
-                        case "MultiLineString":
-                            layer = layerList.createLayer(fileName, Module.ELT_3DLINE);
-                            break;
-                        case "Polygon":
-                        case "MultiPolygon":
-                            layer = layerList.createLayer(fileName, Module.ELT_POLYHEDRON);
-                            break;
-                        default:
-                            alert("지원하지 않는 geometry type: " + type);
-                            return;
-                    }
-                    // 랜더러에서 파싱된 데이터 사용
-                    const randomColor = 'rgba(' + Math.floor(Math.random() * 256) + ',' +
-                        Math.floor(Math.random() * 256) + ',' +
-                        Math.floor(Math.random() * 256) + ', 1.0)';
-                    switch (type) {
-                        case "Point":
-                            createPointObjects(layer, data.features, 0.0, randomColor);
-                            break;
-                        case "LineString":
-                        case "MultiLineString":
-                            createLineObjects(layer, data.features, 0.0, randomColor);
-                            break;
-                        case "Polygon":
-                        case "MultiPolygon":
-                            createPolygonObjects(layer, data.features, 0.0, randomColor);
-                            break;
-                    }
-                    // 새 레이어 UI 생성
-                    const layerItem = document.createElement('div');
-                    layerItem.className = 'layer-item';
+                }
+                // 랜더러에서 파싱된 데이터 사용
+                const randomColor = 'rgba(' + Math.floor(Math.random() * 256) + ',' +
+                    Math.floor(Math.random() * 256) + ',' +
+                    Math.floor(Math.random() * 256) + ', 1.0)';
+                switch (type) {
+                    case "Point":
+                        createPointObjects(layer, data.features, 0.0, randomColor);
+                        break;
+                    case "LineString":
+                    case "MultiLineString":
+                        createLineObjects(layer, data.features, 0.0, randomColor);
+                        break;
+                    case "Polygon":
+                    case "MultiPolygon":
+                        createPolygonObjects(layer, data.features, 0.0, randomColor);
+                        break;
+                }
+                // 새 레이어 UI 생성
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item';
 
-                    // 체크박스
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = true;
-                    checkbox.addEventListener('change', () => {
-                        layer.setVisible(checkbox.checked);
-                    });
-
-                    // geometry 타입에 따른 아이콘
-                    let iconElement = null;
-                    if (type === "Point") {
-                        // 지도용: getPointMarkerIcon(fileName, randomColor)
-                        // 리스트용: getPointMarkerIcon(fileName, randomColor, true)
-                        const iconUrl = getPointMarkerIcon(fileName, randomColor, true);
-                        iconElement = document.createElement('img');
-                        iconElement.src = iconUrl;
-                        iconElement.style.width = '12px';
-                        iconElement.style.height = '12px';
-                        iconElement.style.margin = '0 4px';
-                    } else if (type === "LineString" || type === "MultiLineString") {
-                        iconElement = document.createElement('div');
-                        iconElement.style.width = '16px';
-                        iconElement.style.height = '16px';
-                        iconElement.style.background = 'transparent';
-                        iconElement.style.position = 'relative';
-                        // 선 색상 적용
-                        iconElement.innerHTML = `<div style="position:absolute;top:7px;left:2px;width:12px;height:2px;background:${randomColor};border-radius:1px;"></div>`;
-                    } else if (type === "Polygon" || type === "MultiPolygon") {
-                        iconElement = document.createElement('div');
-                        iconElement.style.width = '16px';
-                        iconElement.style.height = '16px';
-                        iconElement.style.background = randomColor;
-                        iconElement.style.borderRadius = '2px';
-                        iconElement.style.margin = '0 4px';
-                    }
-
-                    // 아이콘 div 생성
-                    const iconDiv = document.createElement('div');
-                    iconDiv.className = 'layer-item-icon ' + (type === "Point" ? 'point' : type === "LineString" || type === "MultiLineString" ? 'line' : 'polygon');
-
-                    // 레이어 이름
-                    const label = document.createElement('span');
-                    label.textContent = fileName;
-                    label.style.cursor = 'pointer'; // 클릭 가능함을 표시
-                    label.addEventListener('click', () => {
-                        moveToLayer(layer)
-                    });
-
-                    // x 제거 버튼
-                    const removeBtn = document.createElement('button');
-                    removeBtn.textContent = "X";
-                    removeBtn.addEventListener('click', () => {
-                        Module.XDEMapRemoveLayer(label.textContent);
-                        layerItem.remove();
-                        mouseOverInterface(false);
-                    });
-
-                    // 조립
-                    layerItem.appendChild(checkbox);
-                    layerItem.appendChild(iconDiv);
-                    layerItem.appendChild(label);
-                    layerItem.appendChild(removeBtn);
-                    document.getElementById('interface').appendChild(layerItem);
-                    index++;
-                }).catch(err => {
-                    alert("GeoJSON 파일을 읽을 수 없습니다: " + err);
+                // 체크박스
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.addEventListener('change', () => {
+                    layer.setVisible(checkbox.checked);
                 });
+
+                // geometry 타입에 따른 아이콘
+                let iconElement = null;
+                if (type === "Point") {
+                    // 지도용: getPointMarkerIcon(fileName, randomColor)
+                    // 리스트용: getPointMarkerIcon(fileName, randomColor, true)
+                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 0);
+                    iconElement = document.createElement('img');
+                    iconElement.src = iconUrl;
+                    iconElement.style.width = '12px';
+                    iconElement.style.height = '12px';
+                    //iconElement.style.position = 'relative';
+                    //iconElement.style.margin = '0 4 16 0px';
+                    //iconElement.innerHTML = `<div style="position:relative;top:7px;left:2px;width:3px;height:3px;background:${randomColor};border-radius:1px;"></div>`;
+                } else if (type === "LineString" || type === "MultiLineString") {
+                    // 지도용: getLineMarkerIcon(fileName, randomColor)
+                    // 리스트용: getLineMarkerIcon(fileName, randomColor, true)
+                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 1);
+                    iconElement = document.createElement('img');
+                    iconElement.src = iconUrl;
+                    iconElement.style.width = '12px';
+                    iconElement.style.height = '12px';
+                    //iconElement.style.position = 'relative';
+                    //iconElement.style.margin = '0 4 16 0px';
+                } else if (type === "Polygon" || type === "MultiPolygon") {
+                    // 지도용: getPolygonMarkerIcon(fileName, randomColor)
+                    // 리스트용: getPolygonMarkerIcon(fileName, randomColor, true)
+                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 2);
+                    iconElement = document.createElement('img');
+                    iconElement.src = iconUrl;
+                    iconElement.style.width = '16px';
+                    iconElement.style.height = '16px';
+                    //iconElement.style.position = 'relative';
+                    //iconElement.style.margin = '0 4 16 0px';                    
+                }
+
+                moveToLayer(layer)
+
+                // 레이어 이름
+                const label = document.createElement('span');
+                label.textContent = fileName;
+                label.style.cursor = 'pointer'; // 클릭 가능함을 표시
+                label.addEventListener('click', () => {
+                    moveToLayer(layer)
+                });
+
+                // x 제거 버튼
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = "X";
+                removeBtn.addEventListener('click', () => {
+                    Module.XDEMapRemoveLayer(label.textContent);
+                    layerItem.remove();
+                    mouseOverInterface(false);
+                });
+
+                // 조립
+                layerItem.appendChild(checkbox);
+                if (iconElement) {
+                    layerItem.appendChild(iconElement);
+                }
+                layerItem.appendChild(label);
+                layerItem.appendChild(removeBtn);
+                document.getElementById('interface').appendChild(layerItem);
+                index++;
+            }).catch(err => {
+                alert("GeoJSON 파일을 읽을 수 없습니다: " + err);
+            });
         }
         function moveToLayer(layer) {
-            console.log(layer);
+            let obj = layer.indexAtObject(0);
+            console.log(obj.position.longitude, obj.position.latitude, obj.position.altitude);
+            let cenLon = obj.position.longitude;
+            let cenLat = obj.position.latitude;
+            let cenAlt = obj.position.altitude;
+            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, cenAlt + 1000), 89.9, 0, 0);
+
+        }
+        // ECEF -> Geodetic (lat, lon, h), WGS84
+        function ecefToLla(x, y, z) {
+            const a = 6378137.0;                 // WGS84 semi-major
+            const f = 1 / 298.257223563;         // flattening
+            const e2 = f * (2 - f);              // first eccentricity^2
+
+            const lon = Math.atan2(y, x);
+            const p = Math.hypot(x, y);
+            let lat = Math.atan2(z, p * (1 - e2));
+            let N, h, latNew;
+
+            for (let i = 0; i < 10; i++) {
+                const sinLat = Math.sin(lat);
+                N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
+                h = p / Math.cos(lat) - N;
+                latNew = Math.atan2(z, p * (1 - e2 * N / (N + h)));
+                if (Math.abs(lat - latNew) < 1e-12) { lat = latNew; break; }
+                lat = latNew;
+            }
+            N = a / Math.sqrt(1 - e2 * Math.sin(lat) ** 2);
+            h = p / Math.cos(lat) - N;
+
+            return {
+                latDeg: lat * 180 / Math.PI,
+                lonDeg: lon * 180 / Math.PI,
+                h
+            };
         }
         function loadMetaLayer(filePath) {
             window.electronAPI.readMeta(filePath)
                 .then(data => {
                     try {
-                        
+
                         const jsonData = JSON.parse(data);
                         const layerName = jsonData['name'];
                         const layerPath = jsonData['path'];
@@ -510,20 +533,19 @@
                         const maxLat = jsonData['area']['max']['lat'];
                         const minLv = jsonData['level']['min'];
                         const maxLv = jsonData['level']['max'];
-                        let cenLon = (minLon+maxLon)/2;
-                        let cenLat = (minLat+maxLat)/2;
-                        
+                        let cenLon = (minLon + maxLon) / 2;
+                        let cenLat = (minLat + maxLat) / 2;
+
                         let layer = null;
                         let layerList = new Module.JSLayerList(false);
-                        if(layerType == "ETLT_PNG_IMAGE"){
+                        if (layerType == "ETLT_PNG_IMAGE") {
                             console.log(layerType, Module.ELT_TERRAIN_IMAGE);
                             Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, Module.ELT_TERRAIN_IMAGE, minLv, maxLv);
                             Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
-                            layer = layerList.nameAtLayer(layerName);                       
+                            layer = layerList.nameAtLayer(layerName);
                         }
-                        
 
-                        if (layer!=null) {
+                        if (layer != null) {
                             console.log(layer);
                             const layerItem = document.createElement('div');
                             layerItem.className = 'layer-item';
@@ -542,6 +564,7 @@
                             label.style.cursor = 'pointer'; // 클릭 가능함을 표시
                             label.addEventListener('click', () => {
                                 // 레이어 클릭시 동작
+                                Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
                             });
 
                             // x 제거 버튼

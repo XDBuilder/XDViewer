@@ -18,7 +18,8 @@ function createWindow() {
         webPreferences: {
             nodeIntegration: false, // Node.js 통합 비활성화
             contextIsolation: true, // 컨텍스트 격리 활성화
-            preload: path.join(__dirname, 'preload.js') // 프리로드 스크립트 경로
+            preload: path.join(__dirname, 'preload.js'), // 프리로드 스크립트 경로
+            sandbox: false
         }
     });
     
