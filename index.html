@@ -538,11 +538,15 @@
 
                         let layer = null;
                         let layerList = new Module.JSLayerList(false);
-                        if (layerType == "ETLT_PNG_IMAGE") {
-                            console.log(layerType, Module.ELT_TERRAIN_IMAGE);
+                        if (layerType == "ETLT_PNG_IMAGE") {                            
                             Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, Module.ELT_TERRAIN_IMAGE, minLv, maxLv);
                             Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
                             layer = layerList.nameAtLayer(layerName);
+                        }else if(layerType == "ETLT_VECTOR_PIPE") {
+                            Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, Module.ELT_PIPE, minLv, maxLv);
+                            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
+                            layer = layerList.nameAtLayer(layerName);
+                            Module.XDESetPlanetTransparecny(0.5);
                         }
 
                         if (layer != null) {
