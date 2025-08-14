@@ -535,22 +535,34 @@
                         const maxLv = jsonData['level']['max'];
                         let cenLon = (minLon + maxLon) / 2;
                         let cenLat = (minLat + maxLat) / 2;
-
+                        let alt = 1000;
                         let layer = null;
                         let layerList = new Module.JSLayerList(false);
+                        let type = null;
                         if (layerType == "ETLT_PNG_IMAGE") {                            
-                            Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, Module.ELT_TERRAIN_IMAGE, minLv, maxLv);
-                            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
-                            layer = layerList.nameAtLayer(layerName);
-                        }else if(layerType == "ETLT_VECTOR_PIPE") {
-                            Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, Module.ELT_PIPE, minLv, maxLv);
-                            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
-                            layer = layerList.nameAtLayer(layerName);
-                            Module.XDESetPlanetTransparecny(0.5);
+                            type = Module.TILE_LAYER_TYPE_IMAGE;
+                            alt = 5000;                            
                         }
+                        if(layerType == "ETLT_VECTOR_PIPE") { 
+                            type = Module.TILE_LAYER_TYPE_VECTOR_PIPE;                            
+                            alt = 500;
+                        }
+                        if(layerType == "ETLT_REAL3D") {
+                            type = Module.TILE_LAYER_TYPE_REAL3D;                                                        
+                        }
+                        if(layerType == "ETLT_3DPOINT"){
+                            type = Module.TILE_LAYER_TYPE_POI;
+                            // 아래 좌표는 테스트용입니다. 제주도 
+                            cenLon = 126.852;
+                            cenLat = 33.523;                            
+                            alt = 500;
+                        }
+                        Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, type, minLv, maxLv);                            
+                        Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);                            
+                        layer = layerList.nameAtLayer(layerName);                        
 
                         if (layer != null) {
-                            console.log(layer);
+
                             const layerItem = document.createElement('div');
                             layerItem.className = 'layer-item';
 
@@ -578,11 +590,26 @@
                                 Module.XDEMapRemoveLayer(label.textContent);
                                 layerItem.remove();
                                 mouseOverInterface(false);
+                                if (layerType == "ETLT_VECTOR_PIPE") {
+                                    Module.XDESetPlanetTransparecny(0.0);
+                                }
                             });
 
                             // 조립
                             layerItem.appendChild(checkbox);
                             layerItem.appendChild(label);
+                            
+                            if (layerType == "ETLT_VECTOR_PIPE") {
+                                const transparencyBtn = document.createElement('button');
+                                transparencyBtn.textContent = 'T';
+                                let isTransparent = false;
+                                transparencyBtn.addEventListener('click', () => {
+                                    isTransparent = !isTransparent;
+                                    Module.XDESetPlanetTransparecny(isTransparent ? 0.25 : 1.0);
+                                });
+                                layerItem.appendChild(transparencyBtn);
+                            }
+
                             layerItem.appendChild(removeBtn);
                             document.getElementById('interface').appendChild(layerItem);
                             index++;

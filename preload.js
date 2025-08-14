@@ -1,6 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const fs = require('fs');
 
+contextBridge.exposeInMainWorld('electronInfo', {
+  chrome: process.versions.chrome,
+  electron: process.versions.electron,
+  node: process.versions.node
+});
 // 렌더러에서 메인 프로세스 호출 및 결과 받기
 contextBridge.exposeInMainWorld('electronAPI', {
   openFileDialog: () => ipcRenderer.send('open-file-dialog'),
