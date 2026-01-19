@@ -1,7 +1,11 @@
-# XDViewer
+# 🎯 XDViewer
+[![Node.js](https://img.shields.io/badge/Node.js-v20.18.1-brightgreen)](https://nodejs.org/)
+[![Electron](https://img.shields.io/badge/Electron-v26.2.0-blue)](https://www.electronjs.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+
 데이터 시각화를 로컬에서 하기위한 일렉트론 기반의 프로젝트 입니다.
-## 
-### 1. Electron 메인 프로세스 (index.js)
+
+## ⚡ 1. **Electron 메인 프로세스 (index.js)**
 - 브라우저 창 생성:
   - 창 크기, 메뉴 숨김, Node.js 및 컨텍스트 격리 설정.
   - preload.js를 활용하여 주고받는 이벤트 처리.
@@ -13,8 +17,8 @@
   - 선택한 파일 경로를 렌더러 프로세스에 전달.
 - globalShortcut:
   - F12 단축키를 등록하여 이벤트 처리.
-##
-### 2. 렌더러 프로세스 (index.html)
+
+## 🖥️ 2. **렌더러 프로세스 (index.html)**
 - UI 디자인:
   - #map: 3D 맵을 렌더링할 컨테이너.
   - #interface: 파일 열기 및 동적으로 생성되는 레이어 관리 버튼.
@@ -27,32 +31,16 @@
 - XDWorld 연동:
   - Module 객체를 통해 3D 타일, DEM 데이터 등을 처리.
   - window.onresize 이벤트로 화면 크기 변화에 동적 대응.
-##
-### 3. 테스트 환경
-- 윈도우 
-  - OS : 윈도우 10 Pro 22H2
-  - Node.js : v20.18.1
-  - npm : 10.8.2
 
-- WSL 2.0 (1.0은 Gui를 지원하지 않음)
-  - OS : Ubuntu-22.04 LTS
-  - fusermount :  2.9.9
-  - Node.js : v22.13.0
-  - npm : 11.0.0
+## 🧪 3. **테스트 환경**
+| 구분             | OS                  | 주요 버전            | Node.js  | npm    | 기타             |
+| -------------- | ------------------- | ---------------- | -------- | ------ | -------------- |
+| 🪟 **Windows** | Windows 10 Pro 22H2 |                  | v20.18.1 | 10.8.2 |                |
+| 🐧 **WSL 2.0** | Ubuntu 22.04 LTS    | fusermount 2.9.9 | v22.13.0 | 11.0.0 | (1.0은 GUI 미지원) |
+| 🧱 **Linux**   | Ubuntu 20.04 LTS    | fusermount 2.9.9 | v10.19.0 | 6.14.4 |                |
+| 🍎 **Mac OS**  | macOS 15.1.1        | brew 4.4.16      | v23.6.0  | 10.9.2 |                |
 
-- 리눅스 
-  - OS : Ubuntu-20.04 LTS
-  - fusermount :  2.9.9
-  - Node.js : v10.19.0
-  - npm : 6.14.4
-
-- Mac OS 
-  - OS : 15.1.1
-  - brew : v4.4.16
-  - Node.js : v23.6.0
-  - npm : 10.9.2
-##
-### 4. **Node.js 설치방법**
+## 🛠️ 4. **Node.js 설치방법**
 - Windows에서 Node.js 설치
   - Node.js 공식 다운로드 페이지로 이동합니다.
   - LTS 또는 Current 버전 중에서 선택하여 다운로드합니다.
@@ -97,7 +85,7 @@ nvm을 사용하면 여러 버전의 Node.js를 쉽게 관리하고, 버전을 �
     - 웹페이지 : https://github.com/coreybutler/nvm-windows/releases
     - 사용법 
 ```shell
-#설치된 버전 확인 
+# 설치된 버전 확인 
 > nvm list
     23.6.0
     22.13.0
@@ -111,8 +99,7 @@ nvm을 사용하면 여러 버전의 Node.js를 쉽게 관리하고, 버전을 �
 # 설치한 버전을 삭제
 > nvm uninstall <버전>
 ```
-##
-### 5. **빌드방법**
+## 🚀 5. **빌드방법**
 ```bash
 $ git clone https://github.com/XDBuilder/XDViewer.git
 $ cd XDViewer
@@ -120,3 +107,22 @@ $ npm install
 $ npm start
 ```
 ![실행](image.png)
+
+## ✅ 6. **로딩확인 레이어**   
+- 🧱 3DTiles 1.0 (ELT_3DTILES)
+  - ELT_3DTILES
+- 🖼️ 영상 (ETLT_PNG_IMAGE)
+  - TILE_LAYER_TYPE_IMAGE
+- 🚇 파이프 (ETLT_VECTOR_PIPE)
+  - TILE_LAYER_TYPE_VECTOR_PIPE
+- 🏙️ 건물 (ETLT_REAL3D)
+  - TILE_LAYER_TYPE_REAL3D
+- 📍 POI (ETLT_3DPOINT)
+  - TILE_LAYER_TYPE_POI
+
+## 💡 7. **팁**
+- DevTools는 Electron 개발 시 필수! F12로 언제든 열어서 디버깅 가능
+
+
+
+
