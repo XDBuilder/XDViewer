@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 const fs = require('fs');
 
 contextBridge.exposeInMainWorld('electronInfo', {
@@ -31,5 +31,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readJsonFile: (path) => {
     const jsonStr = fs.readFileSync(path, 'utf8');
     return JSON.parse(jsonStr);
+  },
+  getPathForFile: (file) => {
+    // Electron의 webUtils를 사용하여 File 객체로부터 경로 가져오기
+    try {
+      return webUtils.getPathForFile(file);
+    } catch (error) {
+      console.error('Error getting file path:', error);
+      return null;
+    }
   }
 });

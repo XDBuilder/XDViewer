@@ -32,82 +32,82 @@
             return color;
         }
 
+        // 파일 처리 함수 (공통 로직)
+        function processFilePath(filePath) {
+            // 파일 경로에서 file:/// 접두어 제거
+            if (filePath.startsWith("file:///")) {
+                filePath = filePath.replace("file:///", "");
+            } else if (filePath.startsWith("File:///")) {
+                filePath = filePath.replace("File:///", "");
+            }
+            filePath = filePath.replace(/\\/g, '/'); // 역슬래시를 슬래시로 변경
+
+            if (filePath.endsWith('tileset.json')) {
+                // tileset.json 파일이면 3DTILES 레이어로 추가
+                let layerList = new Module.JSLayerList(true);
+                // 상위 폴더명 추출
+                let pathParts = filePath.split(/[\\/]/);
+                let parentFolder = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '_LAYER_' + index;
+                let layer = layerList.createLayer(parentFolder, Module.ELT_3DTILES);
+                layer.import3DTiles({
+                    url: filePath,
+                    autoMove: true,
+                    offsetZ: 2.0
+                });
+                layer.setPointCloudPointSize(2.0); // 포인트 클라우드 크기 설정
+
+                // 새 레이어 UI 생성
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item';
+
+                // 체크박스
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.addEventListener('change', () => {
+                    layer.setVisible(checkbox.checked);
+                });
+
+                // 레이어 이름
+                const label = document.createElement('span');
+                label.textContent = parentFolder;
+                label.style.cursor = 'pointer'; // 클릭 가능함을 표시
+                label.addEventListener('click', () => {
+                    const jsonData = window.electronAPI.readJsonFile(filePath);
+                    var trs = jsonData['root']['transform'];
+                    var lla = ecefToLla(trs[12], trs[13], trs[14]);
+                    Module.getViewCamera().move(new Module.JSVector3D(lla.lonDeg, lla.latDeg, lla.h + 1000), 89.9, 0, 0);
+                });
+
+                // x 제거 버튼
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = "X";
+                removeBtn.addEventListener('click', () => {
+                    Module.XDEMapRemoveLayer(label.textContent);
+                    layerItem.remove();
+                    mouseOverInterface(false);
+                });
+
+                // 조립
+                layerItem.appendChild(checkbox);
+                layerItem.appendChild(label);
+                layerItem.appendChild(removeBtn);
+                document.getElementById('interface').appendChild(layerItem);
+                index++;
+            } else if (filePath.endsWith('.geojson')) {
+                loadGeojsonLayer(filePath);
+            } else if (filePath.endsWith('.meta')) {
+                loadMetaLayer(filePath);
+            }
+        }
+
         // Electron에서 파일 경로 수신 시 처리
         window.electronAPI.onFilePathReceived((event, filePaths) => {
             // 여러 파일을 받을 수 있도록 filePaths 배열로 처리
             if (!Array.isArray(filePaths)) {
                 filePaths = [filePaths];
             }
-            filePaths.forEach((filePath) => {
-                // 파일 경로에서 file:/// 접두어 제거
-                if (filePath.startsWith("file:///")) {
-                    filePath = filePath.replace("file:///", "");
-                } else if (filePath.startsWith("File:///")) {
-                    filePath = filePath.replace("File:///", "");
-                }
-                filePath = filePath.replace(/\\/g, '/'); // 역슬래시를 슬래시로 변경
-
-                if (filePath.endsWith('tileset.json')) {
-                    
-
-                    // tileset.json 파일이면 3DTILES 레이어로 추가
-                    let layerList = new Module.JSLayerList(true);
-                    // 상위 폴더명 추출
-                    let pathParts = filePath.split(/[\\/]/);
-                    let parentFolder = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '_LAYER_' + index;
-                    let layer = layerList.createLayer(parentFolder, Module.ELT_3DTILES);
-                    layer.import3DTiles({
-                        url: filePath,
-                        autoMove: true,
-                        offsetZ: 2.0
-                    });
-                    layer.setPointCloudPointSize(1); // 포인트 클라우드 크기 설정
-
-                    // 새 레이어 UI 생성
-                    const layerItem = document.createElement('div');
-                    layerItem.className = 'layer-item';
-
-                    // 체크박스
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = true;
-                    checkbox.addEventListener('change', () => {
-                        layer.setVisible(checkbox.checked);
-                    });
-
-                    // 레이어 이름
-                    const label = document.createElement('span');
-                    label.textContent = parentFolder;
-                    label.style.cursor = 'pointer'; // 클릭 가능함을 표시
-                    label.addEventListener('click', () => {
-                        const jsonData = window.electronAPI.readJsonFile(filePath);
-                        var trs = jsonData['root']['transform'];
-                        var lla = ecefToLla(trs[12], trs[13], trs[14]);
-                        Module.getViewCamera().move(new Module.JSVector3D(lla.lonDeg, lla.latDeg, lla.h + 1000), 89.9, 0, 0);
-
-                    });
-
-                    // x 제거 버튼
-                    const removeBtn = document.createElement('button');
-                    removeBtn.textContent = "X";
-                    removeBtn.addEventListener('click', () => {
-                        Module.XDEMapRemoveLayer(label.textContent);
-                        layerItem.remove();
-                        mouseOverInterface(false);
-                    });
-
-                    // 조립
-                    layerItem.appendChild(checkbox);
-                    layerItem.appendChild(label);
-                    layerItem.appendChild(removeBtn);
-                    document.getElementById('interface').appendChild(layerItem);
-                    index++;
-                } else if (filePath.endsWith('.geojson')) {
-                    loadGeojsonLayer(filePath);
-                } else if (filePath.endsWith('.meta')) {
-                    loadMetaLayer(filePath);
-                }
-            });
+            filePaths.forEach(processFilePath);
         });
 
         // 파일 선택 버튼 클릭 시 메인 프로세스에 파일 선택 요청
@@ -121,6 +121,100 @@
                 properties: ['openFile']
             }); // 메인 프로세스의 파일 선택 다이얼로그 호출
         });
+
+        // 드래그 앤 드롭 기능 추가
+        // Document 레벨에서 기본 드래그 동작 방지 (Electron에서 필수)
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+
+        // body 전체에 드래그 앤 드롭 적용
+        const dropZone = document.body;
+
+        // dragenter 이벤트 추가
+        dropZone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Drag enter detected');
+            document.getElementById('map').classList.add('dragover');
+        }, false);
+
+        // 드래그 오버 시 기본 동작 방지 및 시각적 피드백
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Drag over detected');
+        }, false);
+
+        // 드래그가 영역을 떠날 때 시각적 피드백 제거
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // 완전히 떠났을 때만 제거 (자식 요소로 이동하는 경우 제외)
+            if (e.target === dropZone) {
+                console.log('Drag leave detected');
+                document.getElementById('map').classList.remove('dragover');
+            }
+        }, false);
+
+        // 파일 확장자 검증 함수
+        function isValidFileType(filePath) {
+            const validExtensions = ['.geojson', '.meta'];
+            const fileName = filePath.toLowerCase();
+
+            // tileset.json 체크
+            if (fileName.endsWith('tileset.json')) {
+                return true;
+            }
+
+            // 다른 허용 확장자 체크
+            return validExtensions.some(ext => fileName.endsWith(ext));
+        }
+
+        // 파일 드롭 시 처리
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Drop detected');
+            document.getElementById('map').classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            console.log('Dropped files:', files.length);
+
+            if (files && files.length > 0) {
+                let validFileCount = 0;
+                let invalidFiles = [];
+
+                // Electron의 webUtils를 사용하여 파일 경로 가져오기
+                Array.from(files).forEach(file => {
+                    const filePath = window.electronAPI.getPathForFile(file);
+                    console.log('File path:', filePath);
+
+                    if (filePath) {
+                        // 파일 형식 검증
+                        if (isValidFileType(filePath)) {
+                            processFilePath(filePath);
+                            validFileCount++;
+                        } else {
+                            invalidFiles.push(file.name);
+                        }
+                    }
+                });
+
+                // 유효하지 않은 파일이 있으면 알림
+                if (invalidFiles.length > 0) {
+                    alert('지원하지 않는 파일 형식입니다.\n허용된 파일: .geojson, .meta, tileset.json\n\n잘못된 파일:\n' + invalidFiles.join('\n'));
+                }
+
+                console.log(`Valid files processed: ${validFileCount}, Invalid files: ${invalidFiles.length}`);
+            }
+        }, false);
 
         // 인터페이스 마우스 오버 상태 설정
         function mouseOverInterface(_isOver) {
