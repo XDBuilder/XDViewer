@@ -32,6 +32,86 @@
             return color;
         }
 
+        // 레이어 아이템 드래그 앤 드롭 기능
+        let draggedItem = null;
+
+        // 레이어 순서 동기화 함수
+        function syncLayerOrder() {
+            const container = document.getElementById('interface');
+            const items = Array.from(container.children);
+
+            // 각 레이어 아이템의 현재 위치와 layer 객체를 수집
+            const layerData = items.map((item, index) => ({
+                item: item,
+                layer: item._xdLayer,
+                layerList: item._xdLayerList,
+                currentIndex: index
+            })).filter(data => data.layer && data.layerList);
+
+            // 레이어 순서를 DOM 순서에 맞게 재정렬
+            // 맨 뒤부터 시작해서 각 레이어를 올바른 위치로 이동
+            for (let i = layerData.length - 1; i >= 0; i--) {
+                const data = layerData[i];
+                // 레이어를 맨 뒤로 보낸 다음, 필요한 만큼 앞으로 이동
+                data.layerList.setLayerTopNBottom(data.layer, false); // 맨 뒤로
+            }
+
+            // 이제 역순으로 다시 정렬 (맨 앞부터)
+            for (let i = 0; i < layerData.length; i++) {
+                const data = layerData[i];
+                // i번 반복해서 앞으로 이동
+                for (let j = 0; j < layerData.length - 1 - i; j++) {
+                    data.layerList.setLayerMove(data.layer, true); // 앞으로 이동
+                }
+            }
+        }
+
+        function makeDraggable(layerItem, layer, layerList) {
+            // 레이어 객체를 아이템에 저장
+            layerItem._xdLayer = layer;
+            layerItem._xdLayerList = layerList;
+
+            layerItem.draggable = true;
+            layerItem.style.cursor = 'move';
+
+            layerItem.addEventListener('dragstart', (e) => {
+                draggedItem = layerItem;
+                layerItem.style.opacity = '0.5';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            layerItem.addEventListener('dragend', (e) => {
+                layerItem.style.opacity = '1';
+                draggedItem = null;
+
+                // 드래그가 끝나면 레이어 순서 동기화
+                syncLayerOrder();
+            });
+
+            layerItem.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                if (draggedItem && draggedItem !== layerItem) {
+                    const container = layerItem.parentNode;
+                    const items = Array.from(container.children);
+                    const draggedIndex = items.indexOf(draggedItem);
+                    const targetIndex = items.indexOf(layerItem);
+
+                    if (draggedIndex < targetIndex) {
+                        layerItem.after(draggedItem);
+                    } else {
+                        layerItem.before(draggedItem);
+                    }
+                }
+            });
+
+            layerItem.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        }
+
         // 파일 처리 함수 (공통 로직)
         function processFilePath(filePath) {
             // 파일 경로에서 file:/// 접두어 제거
@@ -92,6 +172,10 @@
                 layerItem.appendChild(checkbox);
                 layerItem.appendChild(label);
                 layerItem.appendChild(removeBtn);
+
+                // 드래그 앤 드롭 가능하게 설정
+                makeDraggable(layerItem, layer, layerList);
+
                 document.getElementById('interface').appendChild(layerItem);
                 index++;
             } else if (filePath.endsWith('.geojson')) {
@@ -149,7 +233,6 @@
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Drag over detected');
         }, false);
 
         // 드래그가 영역을 떠날 때 시각적 피드백 제거
@@ -569,6 +652,10 @@
                 }
                 layerItem.appendChild(label);
                 layerItem.appendChild(removeBtn);
+
+                // 드래그 앤 드롭 가능하게 설정
+                makeDraggable(layerItem, layer, layerList);
+
                 document.getElementById('interface').appendChild(layerItem);
                 index++;
             }).catch(err => {
@@ -705,6 +792,10 @@
                             }
 
                             layerItem.appendChild(removeBtn);
+
+                            // 드래그 앤 드롭 가능하게 설정
+                            makeDraggable(layerItem, layer, layerList);
+
                             document.getElementById('interface').appendChild(layerItem);
                             index++;
                         }
