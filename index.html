@@ -12,16 +12,91 @@
     <!-- 지도 표시 영역 -->
     <div id='map'></div>
 
-    <!-- 사용자 인터페이스 영역 -->
-    <div id="interface" onmouseout="mouseOverInterface(false);" onmouseover="mouseOverInterface(true);">
-        <!-- 레이어 열기 버튼 -->
-        <button id="openLayer">Open</button>
+    <!-- VSCode 스타일 사이드바 -->
+    <div id="sidebar">
+        <!-- 탭 바 -->
+        <div id="tabbar">
+            <button class="tab-button active" data-tab="layers" title="레이어">
+                ☰
+            </button>
+        </div>
+
+        <!-- 사이드바 패널 -->
+        <div id="sidebar-panel" onmouseout="mouseOverInterface(false);" onmouseover="mouseOverInterface(true);">
+            <!-- 레이어 패널 -->
+            <div id="layers-panel" class="panel active">
+                <div class="panel-header">
+                    레이어
+                </div>
+                <div class="panel-content">
+                    <!-- 레이어 열기 버튼 -->
+                    <button id="openLayer">레이어 추가</button>
+
+                    <!-- 레이어 아이템들이 추가될 영역 -->
+                    <div id="interface"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="geojsonLayerList" class="layerlist" style="margin-bottom: 10px;"></div>
 
     <script>
         index = 0;
+
+        // 사이드바 탭 토글 기능
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const sidebarPanel = document.getElementById('sidebar-panel');
+            const mapElement = document.getElementById('map');
+            let currentTab = 'layers';
+
+            // 사이드바 닫기 함수
+            function closeSidebar() {
+                if (!sidebarPanel.classList.contains('collapsed')) {
+                    sidebarPanel.classList.add('collapsed');
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    currentTab = null;
+                }
+            }
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+
+                    // 같은 탭을 다시 클릭하면 패널 닫기
+                    if (currentTab === tabName && !sidebarPanel.classList.contains('collapsed')) {
+                        closeSidebar();
+                    } else {
+                        // 다른 탭 클릭 시 패널 열기
+                        sidebarPanel.classList.remove('collapsed');
+
+                        // 모든 탭 버튼과 패널 비활성화
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+
+                        // 선택된 탭 활성화
+                        button.classList.add('active');
+                        document.getElementById(`${tabName}-panel`).classList.add('active');
+                        currentTab = tabName;
+                    }
+                });
+            });
+
+            // 지도 클릭 시 사이드바 닫기
+            mapElement.addEventListener('mousedown', (e) => {
+                // 사이드바 영역 클릭은 제외
+                if (!e.target.closest('#sidebar')) {
+                    closeSidebar();
+                }
+            });
+
+            // 지도 휠(줌) 사용 시 사이드바 닫기
+            mapElement.addEventListener('wheel', (e) => {
+                closeSidebar();
+            });
+        });
+
         // 랜덤 색상 생성 함수
         function getRandomColor() {
             const letters = '0123456789ABCDEF';
@@ -151,6 +226,7 @@
                 // 레이어 이름
                 const label = document.createElement('span');
                 label.textContent = parentFolder;
+                label.title = parentFolder; // 마우스 오버 시 전체 이름 표시
                 label.style.cursor = 'pointer'; // 클릭 가능함을 표시
                 label.addEventListener('click', () => {
                     const jsonData = window.electronAPI.readJsonFile(filePath);
@@ -631,6 +707,7 @@
                 // 레이어 이름
                 const label = document.createElement('span');
                 label.textContent = fileName;
+                label.title = fileName; // 마우스 오버 시 전체 이름 표시
                 label.style.cursor = 'pointer'; // 클릭 가능함을 표시
                 label.addEventListener('click', () => {
                     moveToLayer(layer)
@@ -758,6 +835,7 @@
                             // 레이어 이름
                             const label = document.createElement('span');
                             label.textContent = layerName;
+                            label.title = layerName; // 마우스 오버 시 전체 이름 표시
                             label.style.cursor = 'pointer'; // 클릭 가능함을 표시
                             label.addEventListener('click', () => {
                                 // 레이어 클릭시 동작
