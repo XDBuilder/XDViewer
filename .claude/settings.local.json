@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(npm run dist:*)",
+      "WebFetch(domain:egiscorp.gitbook.io)",
+      "WebFetch(domain:sandbox.egiscloud.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:cdn.xdworld.kr)"
+    ]
+  }
+}

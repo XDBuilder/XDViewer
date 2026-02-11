@@ -1,7 +1,7 @@
 {
   "name": "XDViewer",
-  "version": "1.0.0",
-  "description": "An example Electron app.",
+  "version": "1.0.2",
+  "description": "데이터 시각화를 로컬에서 하기위한 일렉트론 기반의 프로젝트 입니다.",
   "main": "index.js",
   "author": {
     "name": "WooJin Lee",
@@ -10,7 +10,7 @@
   "homepage": "https://egiskorea.com",
   "devDependencies": {
     "electron": "^37.2.6",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^26.7.0"
   },
   "scripts": {
     "start": "electron .",
@@ -20,8 +20,16 @@
   "build": {
     "appId": "com.egiskorea.xdviewer",
     "productName": "XDViewer",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "XDBuilder",
+        "repo": "XDViewer"
+      }
+    ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": false
     },
     "mac": {
       "target": "dmg"
@@ -36,6 +44,8 @@
     }
   },
   "dependencies": {
+    "electron-updater": "^6.7.3",
+    "geotiff": "^3.0.1",
     "iconv-lite": "^0.6.3",
     "jschardet": "^3.1.4"
   }

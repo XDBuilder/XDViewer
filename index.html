@@ -9,31 +9,112 @@
 </head>
 
 <body>
+    <!-- 로딩 화면 -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <h1>XDViewer</h1>
+                <p>3D 지도 엔진 로딩중...</p>
+            </div>
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+            <div class="loading-text">잠시만 기다려 주세요</div>
+        </div>
+    </div>
+
     <!-- 지도 표시 영역 -->
     <div id='map'></div>
 
     <!-- VSCode 스타일 사이드바 -->
     <div id="sidebar">
         <!-- 탭 바 -->
-        <div id="tabbar">
-            <button class="tab-button active" data-tab="layers" title="레이어">
+        <div id="tabbar" class="transparent">
+            <button class="tab-button" data-tab="layers" title="레이어">
                 ☰
+            </button>
+            <button class="tab-button" data-tab="settings" title="설정">
+                ⚙
+            </button>
+            <button class="tab-button" data-tab="info" title="정보">
+                ⓘ
+            </button>
+            <div style="flex:1"></div>
+            <button class="tab-button" id="dbTabButton" title="데이터베이스">
+                ⊞
             </button>
         </div>
 
         <!-- 사이드바 패널 -->
-        <div id="sidebar-panel" onmouseout="mouseOverInterface(false);" onmouseover="mouseOverInterface(true);">
+        <div id="sidebar-panel" class="collapsed" onmouseout="mouseOverInterface(false);"
+            onmouseover="mouseOverInterface(true);">
             <!-- 레이어 패널 -->
             <div id="layers-panel" class="panel active">
                 <div class="panel-header">
-                    레이어
+                    <span>레이어</span>
+                    <button id="openLayer">+</button>
                 </div>
                 <div class="panel-content">
-                    <!-- 레이어 열기 버튼 -->
-                    <button id="openLayer">레이어 추가</button>
-
                     <!-- 레이어 아이템들이 추가될 영역 -->
                     <div id="interface"></div>
+                </div>
+            </div>
+
+            <!-- 설정 패널 -->
+            <div id="settings-panel" class="panel">
+                <div class="panel-header">
+                    <span>설정</span>
+                </div>
+                <div class="panel-content settings-content">
+                    <div class="settings-section">
+                        <div class="settings-label">배경지도</div>
+                        <select id="basemapSelect" class="settings-select">
+                            <option value="0">기본 (VWorld)</option>
+                            <option value="1">Google (일반)</option>
+                            <option value="2">Google (지형)</option>
+                            <option value="3">Google (벡터 하이브리드)</option>
+                            <option value="4">Google (위성 하이브리드)</option>
+                            <option value="5">Google (위성)</option>
+                            <option value="6">ArcMap (일반)</option>
+                            <option value="7">ArcMap (지형)</option>
+                            <option value="8">ArcMap (벡터 하이브리드)</option>
+                            <option value="9">ArcMap (위성)</option>
+                            <option value="10">OpenStreetMap</option>
+                            <option value="11">초기화</option>
+                        </select>
+                    </div>
+                    <div class="settings-section">
+                        <div class="settings-label">이미지 품질</div>
+                        <select id="basemapQuality" class="settings-select">
+                            <option value="low">낮음</option>
+                            <option value="middle" selected>보통</option>
+                            <option value="high">높음</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 정보 패널 -->
+            <div id="info-panel" class="panel">
+                <div class="panel-header">
+                    <span>정보</span>
+                </div>
+                <div class="panel-content info-content">
+                    <div class="info-section">
+                        <div class="info-logo">XDViewer</div>
+                        <div class="info-version" id="app-version">v0.0.0</div>
+                        <div class="info-description">Digital Twin Viewer</div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-label">Developer</div>
+                        <div class="info-value">EGIS Co., Ltd.</div>
+                    </div>
+                    <div class="info-section">
+                        <a href="#" id="github-link" class="info-link" title="GitHub 저장소 열기">
+                            <span class="github-icon">⬡</span>
+                            <span>GitHub</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -41,24 +122,982 @@
 
     <div id="geojsonLayerList" class="layerlist" style="margin-bottom: 10px;"></div>
 
+    <!-- 컨텍스트 메뉴 (동적으로 생성) -->
+    <div id="contextMenu" class="context-menu" style="display: none;">
+    </div>
+
+    <!-- CSV 컬럼 선택 모달 -->
+    <div id="csvModal" class="csv-modal-overlay" style="display: none;">
+        <div class="csv-modal">
+            <div class="csv-modal-header">
+                <span>CSV 컬럼 설정</span>
+                <button id="csvModalClose" class="close-properties-btn">×</button>
+            </div>
+            <div class="csv-modal-body">
+                <div class="csv-modal-info" id="csvModalInfo"></div>
+                <div class="csv-modal-row">
+                    <label>경도 (Longitude)</label>
+                    <select id="csvColLon"></select>
+                </div>
+                <div class="csv-modal-row">
+                    <label>위도 (Latitude)</label>
+                    <select id="csvColLat"></select>
+                </div>
+                <div class="csv-modal-row">
+                    <label>이름 (선택)</label>
+                    <select id="csvColName"></select>
+                </div>
+                <div class="csv-modal-preview">
+                    <span class="csv-preview-title">미리보기 (상위 5건)</span>
+                    <table id="csvPreviewTable"></table>
+                </div>
+            </div>
+            <div class="csv-modal-footer">
+                <button id="csvModalCancel" class="csv-btn csv-btn-cancel">취소</button>
+                <button id="csvModalOk" class="csv-btn csv-btn-ok">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 패널 리사이즈 핸들 -->
+    <div id="bottom-panel-resizer"></div>
+
+    <!-- 하단 패널 (SQL 데이터 뷰어) -->
+    <div id="bottom-panel" onmouseover="mouseOverInterface(true);" onmouseout="mouseOverInterface(false);">
+        <div id="bottom-panel-header">
+            <div id="bottom-panel-tabs">
+                <span class="bottom-panel-title">SQL</span>
+                <select id="sqlTableSelect" title="테이블 선택">
+                    <option value="">테이블 선택...</option>
+                </select>
+            </div>
+            <div id="bottom-panel-actions">
+                <span id="sqlStatus"></span>
+                <button id="bottomPanelClose" title="닫기">&times;</button>
+            </div>
+        </div>
+        <div id="bottom-panel-content">
+            <div id="sql-query-area">
+                <textarea id="sqlInput" placeholder="SELECT * FROM tablename LIMIT 100" spellcheck="false"></textarea>
+                <button id="sqlRunBtn" class="csv-btn csv-btn-ok" title="Ctrl+Enter">실행</button>
+            </div>
+            <div id="sql-results-area">
+                <table id="sqlResultsTable">
+                    <thead id="sqlResultsHead"></thead>
+                    <tbody id="sqlResultsBody"></tbody>
+                </table>
+            </div>
+            <div id="sqlResultsInfo"></div>
+        </div>
+    </div>
+
     <script>
         index = 0;
 
+        // ============ SQLite 데이터베이스 관리 ============
+        let sqlDb = null;
+        let sqlReady = false;
+        const sqlTableMap = {};
+
+        async function initSqlite() {
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/${file}`
+                });
+                sqlDb = new SQL.Database();
+                sqlReady = true;
+                console.log('SQLite 초기화 완료');
+            } catch (err) {
+                console.error('SQLite 초기화 실패:', err);
+            }
+        }
+
+        function sanitizeTableName(name) {
+            let safe = name.replace(/[^a-zA-Z0-9가-힣_]/g, '_').replace(/^[0-9]/, '_$&');
+            // 테이블명 중복 시 접미사 추가
+            if (sqlTableMap[safe]) {
+                let i = 2;
+                while (sqlTableMap[safe + '_' + i]) i++;
+                safe = safe + '_' + i;
+            }
+            return safe || 'table_' + Date.now();
+        }
+
+        function importCsvToSqlite(tableName, headers, rows) {
+            if (!sqlDb || !sqlReady) return null;
+
+            const safeName = sanitizeTableName(tableName);
+            const safeHeaders = headers.map((h, i) => {
+                const safe = h.replace(/[^a-zA-Z0-9가-힣_]/g, '_').replace(/^[0-9]/, '_$&');
+                return safe || 'col_' + i;
+            });
+
+            // 컬럼 타입 추론
+            const types = safeHeaders.map((_, colIdx) => {
+                let numCount = 0;
+                const sampleSize = Math.min(20, rows.length);
+                for (let i = 0; i < sampleSize; i++) {
+                    const val = rows[i] && rows[i][colIdx];
+                    if (val !== undefined && val !== '' && !isNaN(Number(val))) numCount++;
+                }
+                return (sampleSize > 0 && numCount / sampleSize >= 0.8) ? 'REAL' : 'TEXT';
+            });
+
+            const colDefs = safeHeaders.map((h, i) => `"${h}" ${types[i]}`).join(', ');
+            sqlDb.run(`DROP TABLE IF EXISTS "${safeName}"`);
+            sqlDb.run(`CREATE TABLE "${safeName}" (${colDefs})`);
+
+            const placeholders = safeHeaders.map(() => '?').join(', ');
+            const insertSql = `INSERT INTO "${safeName}" VALUES (${placeholders})`;
+
+            sqlDb.run('BEGIN TRANSACTION');
+            for (const row of rows) {
+                const values = safeHeaders.map((_, i) => {
+                    const val = row[i];
+                    if (val === undefined || val === '') return null;
+                    if (types[i] === 'REAL' && !isNaN(Number(val))) return Number(val);
+                    return val;
+                });
+                sqlDb.run(insertSql, values);
+            }
+            sqlDb.run('COMMIT');
+
+            sqlTableMap[safeName] = { originalName: tableName, rowCount: rows.length };
+            updateTableSelect();
+            console.log(`SQLite 테이블 "${safeName}" 생성: ${rows.length}행`);
+            return safeName;
+        }
+
+        function importGeoJsonToSqlite(tableName, features) {
+            if (!sqlDb || !sqlReady || !features || features.length === 0) return null;
+
+            const safeName = sanitizeTableName(tableName);
+
+            // 모든 feature의 properties 키 수집
+            const propKeys = new Set();
+            for (const f of features) {
+                if (f.properties) Object.keys(f.properties).forEach(k => propKeys.add(k));
+            }
+            const propArray = Array.from(propKeys);
+
+            // 특수 컬럼 + properties 컬럼
+            const allCols = ['_id', '_geometry_type', '_longitude', '_latitude', ...propArray];
+            const safeCols = allCols.map(h => h.replace(/[^a-zA-Z0-9가-힣_]/g, '_').replace(/^[0-9]/, '_$&'));
+
+            // 타입 추론
+            const types = allCols.map((col, idx) => {
+                if (idx <= 1) return 'TEXT'; // _id, _geometry_type
+                if (idx <= 3) return 'REAL'; // _longitude, _latitude
+                let numCount = 0;
+                const sampleSize = Math.min(20, features.length);
+                for (let i = 0; i < sampleSize; i++) {
+                    const val = features[i].properties && features[i].properties[propArray[idx - 4]];
+                    if (val !== undefined && val !== null && val !== '' && !isNaN(Number(val))) numCount++;
+                }
+                return (sampleSize > 0 && numCount / sampleSize >= 0.8) ? 'REAL' : 'TEXT';
+            });
+
+            const colDefs = safeCols.map((h, i) => `"${h}" ${types[i]}`).join(', ');
+            sqlDb.run(`DROP TABLE IF EXISTS "${safeName}"`);
+            sqlDb.run(`CREATE TABLE "${safeName}" (${colDefs})`);
+
+            const placeholders = safeCols.map(() => '?').join(', ');
+            const insertSql = `INSERT INTO "${safeName}" VALUES (${placeholders})`;
+
+            sqlDb.run('BEGIN TRANSACTION');
+            for (const f of features) {
+                const geom = f.geometry;
+                let lon = null, lat = null;
+                if (geom && geom.coordinates) {
+                    if (geom.type === 'Point') {
+                        lon = geom.coordinates[0]; lat = geom.coordinates[1];
+                    } else if (geom.type === 'LineString' || geom.type === 'MultiLineString') {
+                        const coords = geom.type === 'LineString' ? geom.coordinates : geom.coordinates[0];
+                        if (coords && coords.length > 0) { lon = coords[0][0]; lat = coords[0][1]; }
+                    } else if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
+                        const ring = geom.type === 'Polygon' ? geom.coordinates[0] : geom.coordinates[0][0];
+                        if (ring && ring.length > 0) { lon = ring[0][0]; lat = ring[0][1]; }
+                    }
+                }
+
+                const values = [
+                    f.id || f.properties?.id || null,
+                    geom ? geom.type : null,
+                    lon, lat,
+                    ...propArray.map(k => {
+                        const val = f.properties && f.properties[k];
+                        if (val === undefined || val === null) return null;
+                        return val;
+                    })
+                ];
+                sqlDb.run(insertSql, values);
+            }
+            sqlDb.run('COMMIT');
+
+            sqlTableMap[safeName] = { originalName: tableName, rowCount: features.length };
+            updateTableSelect();
+            console.log(`SQLite 테이블 "${safeName}" 생성: ${features.length}행`);
+            return safeName;
+        }
+
+        function executeSqlQuery(sql) {
+            if (!sqlDb || !sqlReady) return { error: 'SQLite가 초기화되지 않았습니다.' };
+            try {
+                const results = sqlDb.exec(sql);
+                if (results.length === 0) return { columns: [], values: [], message: '결과 없음 (0행)' };
+                return { columns: results[0].columns, values: results[0].values, message: `${results[0].values.length}행 반환` };
+            } catch (err) {
+                return { error: err.message };
+            }
+        }
+
+        function findSqliteTable(name) {
+            const safeName = name.replace(/[^a-zA-Z0-9가-힣_]/g, '_').replace(/^[0-9]/, '_$&');
+            for (const key of Object.keys(sqlTableMap)) {
+                if (key === safeName || sqlTableMap[key].originalName === name) return key;
+            }
+            return null;
+        }
+
+        function dropSqliteTable(tableName) {
+            if (!sqlDb || !sqlReady) return;
+            const key = findSqliteTable(tableName);
+            if (key) {
+                // 현재 표시 중인 테이블이면 결과 초기화
+                const select = document.getElementById('sqlTableSelect');
+                if (select && select.value === key) {
+                    select.value = '';
+                    document.getElementById('sqlInput').value = '';
+                    document.getElementById('sqlResultsHead').innerHTML = '';
+                    document.getElementById('sqlResultsBody').innerHTML = '';
+                    document.getElementById('sqlResultsInfo').textContent = '';
+                    document.getElementById('sqlStatus').textContent = '';
+                    document.getElementById('sqlStatus').className = '';
+                }
+
+                sqlDb.run(`DROP TABLE IF EXISTS "${key}"`);
+                delete sqlTableMap[key];
+                updateTableSelect();
+
+                // 테이블이 하나도 없으면 패널 닫기
+                if (Object.keys(sqlTableMap).length === 0) {
+                    hideBottomPanel();
+                }
+            }
+        }
+
+        // ============ 하단 패널 (SQL 데이터 뷰어) ============
+        let bottomPanelVisible = false;
+        let bottomPanelHeight = 250;
+
+        function showBottomPanel() {
+            document.getElementById('bottom-panel').classList.add('visible');
+            document.getElementById('bottom-panel-resizer').classList.add('visible');
+            bottomPanelVisible = true;
+            updateMapSize();
+        }
+
+        function hideBottomPanel() {
+            document.getElementById('bottom-panel').classList.remove('visible');
+            document.getElementById('bottom-panel-resizer').classList.remove('visible');
+            bottomPanelVisible = false;
+            updateMapSize();
+        }
+
+        function updateMapSize() {
+            const mapEl = document.getElementById('map');
+            if (bottomPanelVisible) {
+                mapEl.style.height = `calc(100% - ${bottomPanelHeight}px)`;
+                document.getElementById('bottom-panel').style.height = bottomPanelHeight + 'px';
+                document.getElementById('bottom-panel-resizer').style.bottom = bottomPanelHeight + 'px';
+            } else {
+                mapEl.style.height = '100%';
+            }
+            if (typeof Module === 'object' && typeof Module.Resize === 'function') {
+                const h = bottomPanelVisible ? window.innerHeight - bottomPanelHeight : window.innerHeight;
+                Module.Resize(window.innerWidth, h);
+                Module.XDRenderData();
+            }
+            // 선택 패널 위치 조정
+            const selPanel = document.getElementById('selection-panel');
+            if (selPanel) {
+                selPanel.style.bottom = bottomPanelVisible ? (bottomPanelHeight + 20) + 'px' : '20px';
+            }
+        }
+
+        function updateTableSelect() {
+            const select = document.getElementById('sqlTableSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">테이블 선택...</option>';
+            for (const name of Object.keys(sqlTableMap)) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = `${sqlTableMap[name].originalName} (${sqlTableMap[name].rowCount}행)`;
+                select.appendChild(opt);
+            }
+        }
+
+        function runDefaultQuery(tableName) {
+            const sql = `SELECT * FROM "${tableName}" LIMIT 100`;
+            document.getElementById('sqlInput').value = sql;
+            executeAndDisplayQuery(sql);
+        }
+
+        function executeAndDisplayQuery(sql) {
+            const status = document.getElementById('sqlStatus');
+            const thead = document.getElementById('sqlResultsHead');
+            const tbody = document.getElementById('sqlResultsBody');
+            const info = document.getElementById('sqlResultsInfo');
+
+            const t0 = performance.now();
+            const result = executeSqlQuery(sql);
+            const elapsed = (performance.now() - t0).toFixed(1);
+
+            if (result.error) {
+                status.textContent = result.error;
+                status.className = 'error';
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+                info.textContent = '';
+                return;
+            }
+
+            status.textContent = `${result.message} (${elapsed}ms)`;
+            status.className = 'success';
+
+            let headHtml = '<tr><th>#</th>';
+            result.columns.forEach(col => { headHtml += `<th>${col}</th>`; });
+            headHtml += '</tr>';
+            thead.innerHTML = headHtml;
+
+            let bodyHtml = '';
+            result.values.forEach((row, i) => {
+                bodyHtml += `<tr data-row-idx="${i}">`;
+                bodyHtml += `<td style="color:#858585">${i + 1}</td>`;
+                row.forEach(val => {
+                    const display = val !== null ? String(val) : '';
+                    const cls = val === null ? ' style="color:#555"' : '';
+                    bodyHtml += `<td title="${display}"${cls}>${val !== null ? display : 'NULL'}</td>`;
+                });
+                bodyHtml += '</tr>';
+            });
+            tbody.innerHTML = bodyHtml;
+            info.textContent = `${result.values.length}행 | ${result.columns.length}개 컬럼`;
+
+            // 행 클릭: 좌표 컬럼 감지하여 카메라 이동
+            const lonKw = ['경도', 'lon', 'longitude', 'lng', '_longitude'];
+            const latKw = ['위도', 'lat', 'latitude', '_latitude'];
+            let lonCol = -1, latCol = -1;
+            result.columns.forEach((col, i) => {
+                const lc = col.toLowerCase();
+                if (lonCol < 0 && lonKw.some(k => lc.includes(k))) lonCol = i;
+                if (latCol < 0 && latKw.some(k => lc.includes(k))) latCol = i;
+            });
+
+            tbody.querySelectorAll('tr').forEach(tr => {
+                tr.addEventListener('click', () => {
+                    tbody.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+                    tr.classList.add('selected');
+                    if (lonCol >= 0 && latCol >= 0) {
+                        const idx = parseInt(tr.dataset.rowIdx);
+                        const lon = parseFloat(result.values[idx][lonCol]);
+                        const lat = parseFloat(result.values[idx][latCol]);
+                        if (!isNaN(lon) && !isNaN(lat) && typeof Module !== 'undefined') {
+                            const camera = Module.getViewCamera();
+                            if (camera) camera.move(new Module.JSVector3D(lon, lat, 500), 89.9, 0, 0);
+                        }
+                    }
+                });
+            });
+        }
+
+        // 하단 패널 이벤트 초기화
+        function initBottomPanel() {
+            // 리사이저
+            const resizer = document.getElementById('bottom-panel-resizer');
+            let isResizing = false;
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                resizer.classList.add('dragging');
+                document.body.style.cursor = 'ns-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const newH = window.innerHeight - e.clientY;
+                bottomPanelHeight = Math.max(100, Math.min(newH, window.innerHeight * 0.7));
+                updateMapSize();
+            });
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    resizer.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+
+            // 닫기
+            document.getElementById('bottomPanelClose').addEventListener('click', hideBottomPanel);
+
+            // DB 탭 버튼 토글
+            document.getElementById('dbTabButton').addEventListener('click', () => {
+                bottomPanelVisible ? hideBottomPanel() : showBottomPanel();
+            });
+
+            // 실행 버튼
+            document.getElementById('sqlRunBtn').addEventListener('click', () => {
+                const sql = document.getElementById('sqlInput').value.trim();
+                if (sql) executeAndDisplayQuery(sql);
+            });
+
+            // Ctrl+Enter 실행
+            document.getElementById('sqlInput').addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    const sql = e.target.value.trim();
+                    if (sql) executeAndDisplayQuery(sql);
+                }
+            });
+
+            // 테이블 선택
+            document.getElementById('sqlTableSelect').addEventListener('change', (e) => {
+                if (e.target.value) runDefaultQuery(e.target.value);
+            });
+        }
+
+        // POI 아이콘 SVG 템플릿 (COLOR_PLACEHOLDER를 실제 색상으로 교체)
+        const POI_ICON_TEMPLATES = {
+            'pin': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36"><path fill="COLOR_PLACEHOLDER" d="M12,2C7.6,2,4,5.6,4,10c0,6.4,8,16,8,16s8-9.6,8-16C20,5.6,16.4,2,12,2z"/><circle fill="#FFF" cx="12" cy="10" r="4"/></svg>',
+            'star': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="COLOR_PLACEHOLDER" d="M12,2.5l3.1,6.3l6.9,1l-5,4.9l1.2,6.9L12,18l-6.2,3.3l1.2-6.9l-5-4.9l6.9-1L12,2.5z"/></svg>',
+            'home': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="COLOR_PLACEHOLDER" d="M10,20v-6h4v6h5V12h3L12,3l-10,9h3V20h5z"/></svg>',
+            'flag': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="COLOR_PLACEHOLDER" d="M14,6l-1,2H7V4H6V21H7V13h5l-1,2h6V6h-3z"/></svg>',
+            'circle': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><circle fill="COLOR_PLACEHOLDER" cx="12" cy="12" r="8"/></svg>'
+        };
+
+        // SVG 템플릿에 색상을 적용하여 data URL 생성
+        function createColoredIconUrl(templateName, hexColor) {
+            if (!POI_ICON_TEMPLATES[templateName]) {
+                // 템플릿이 없으면 circle을 기본값으로
+                templateName = 'circle';
+            }
+            const svg = POI_ICON_TEMPLATES[templateName].replace('COLOR_PLACEHOLDER', hexColor);
+            const base64 = btoa(svg);
+            return 'data:image/svg+xml;base64,' + base64;
+        }
+
+        // 컨텍스트 메뉴 숨기기 함수 (전역)
+        function hideContextMenu() {
+            const contextMenu = document.getElementById('contextMenu');
+            if (contextMenu) {
+                contextMenu.style.display = 'none';
+            }
+            // 레이어 강조 제거
+            document.querySelectorAll('.layer-item.context-menu-active, .layer-item-container.context-menu-active').forEach(item => {
+                item.classList.remove('context-menu-active');
+            });
+            window.currentContextLayer = null;
+        }
+
+        // 컨텍스트 메뉴 표시 함수 (위치 자동 조정)
+        function showContextMenu(event, targetElement) {
+            const contextMenu = document.getElementById('contextMenu');
+
+            // 기존 강조 제거
+            document.querySelectorAll('.layer-item.context-menu-active, .layer-item-container.context-menu-active').forEach(item => {
+                item.classList.remove('context-menu-active');
+            });
+
+            // 현재 요소 강조
+            if (targetElement) {
+                targetElement.classList.add('context-menu-active');
+            }
+
+            // 메뉴를 일단 표시 (크기 계산을 위해)
+            contextMenu.style.display = 'block';
+            contextMenu.style.transform = 'none';
+
+            // 마우스 위치
+            let x = event.clientX;
+            let y = event.clientY;
+
+            // 메뉴 크기
+            const menuRect = contextMenu.getBoundingClientRect();
+            const menuWidth = menuRect.width;
+            const menuHeight = menuRect.height;
+
+            // 화면 크기
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // 오른쪽으로 벗어나는 경우 왼쪽으로 이동
+            if (x + menuWidth > viewportWidth) {
+                x = viewportWidth - menuWidth - 10;
+            }
+
+            // 아래로 벗어나는 경우 위로 이동
+            if (y + menuHeight > viewportHeight) {
+                y = viewportHeight - menuHeight - 10;
+            }
+
+            // 위로 벗어나는 경우
+            if (y < 0) {
+                y = 10;
+            }
+
+            // 왼쪽으로 벗어나는 경우
+            if (x < 0) {
+                x = 10;
+            }
+
+            contextMenu.style.left = x + 'px';
+            contextMenu.style.top = y + 'px';
+        }
+
+        function getLayerSemanticType(layer) {
+            const t = layer.getType();
+
+            switch (t) {
+                case 5: // ELT_3DPOINT
+                case 3: // ELT_BILLBOARD
+                case 6: // ELT_3DS_SYMBOL
+                    return "point";
+
+                case 4: // ELT_3DLINE
+                case 2: // ELT_PIPE
+                    return "line";
+
+                case 0: // ELT_POLYHEDRON
+                case 1: // ELT_PLANE
+                    return "polygon";
+
+                case 8:  // ELT_TERRAIN
+                case 11: // ELT_TERRAIN_IMAGE
+                    return "raster";
+
+                case 9:  // REAL3D / MULTIPLE (SDK별 다름)
+                case 20: // TILE_LOD_MODEL
+                    return "3dmodel";
+
+                case 19: // POINT_CLOUD
+                    return "pointcloud";
+
+                default:
+                    return "unknown";
+            }
+        }
+
+        function buildContextMenu(layerData) {
+            const menu = document.getElementById('contextMenu');
+            menu.innerHTML = '';
+            //menu.onclick = e => e.stopPropagation();
+
+            // 공통 메뉴 아이템 추가 헬퍼
+            const addMenuItem = (text, handler, danger = false) => {
+                const item = document.createElement('div');
+                item.className = 'context-menu-item' + (danger ? ' danger' : '');
+                item.textContent = text;
+                item.onclick = handler;
+                menu.appendChild(item);
+            };
+
+            // =========================
+            // 1) 레이어로 이동
+            // =========================
+            addMenuItem('레이어로 이동', () => {
+                layerData.label?.click();
+                hideContextMenu();
+            });
+
+            // =========================
+            // 2) 레이어 이름 변경 (Label ↔ Input 토글)
+            // =========================
+            const nameBox = document.createElement('div');
+            nameBox.className = 'context-menu-item';
+            nameBox.style.display = 'flex';
+            nameBox.style.alignItems = 'center';
+            nameBox.style.gap = '5px';
+
+            // label (기본 표시)
+            const nameLabel = document.createElement('span');
+            nameLabel.textContent = layerData.label?.textContent || 'Layer';
+            nameLabel.style.width = '200px';
+            nameLabel.style.display = 'inline-block';
+
+            // input (숨김)
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.style.width = '200px';
+            nameInput.style.padding = '4px 8px';
+            nameInput.style.border = '1px solid #007acc';
+            nameInput.style.borderRadius = '3px';
+            nameInput.style.background = '#3c3c3c';
+            nameInput.style.color = '#fff';
+            nameInput.style.outline = 'none';
+            nameInput.style.display = 'none';
+
+            // 클릭 시 강제 포커스
+            nameInput.addEventListener('mousedown', async (e) => {
+                e.stopPropagation();
+                if (window.electronAPI?.focusWindow) {
+                    await window.electronAPI.focusWindow();
+                }
+            });
+            nameInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+                nameInput.focus();
+            });
+
+            // 버튼
+            const nameBtn = document.createElement('button');
+            nameBtn.textContent = '변경';
+            nameBtn.style.width = '50px';
+
+            let editing = false;
+
+            nameBtn.onclick = async () => {
+                editing = !editing;
+
+                if (editing) {
+                    // 변경 모드 진입
+                    nameInput.value = nameLabel.textContent;
+                    nameLabel.style.display = 'none';
+                    nameInput.style.display = 'inline-block';
+                    nameBtn.textContent = '적용';
+
+                    // 포커스 (반복 시도)
+                    if (window.electronAPI?.focusWindow) {
+                        await window.electronAPI.focusWindow();
+                    }
+                    const focusInterval = setInterval(() => {
+                        if (window.electronAPI?.focusWindow) {
+                            window.electronAPI.focusWindow();
+                        }
+                        nameInput.focus();
+                        if (document.activeElement === nameInput) {
+                            nameInput.select();
+                            clearInterval(focusInterval);
+                        }
+                    }, 100);
+                    setTimeout(() => clearInterval(focusInterval), 2000);
+                } else {
+                    // 적용
+                    const newName = nameInput.value.trim() || 'Layer';
+                    nameLabel.textContent = newName;
+                    layerData.name = newName;
+                    if (layerData.label) layerData.label.textContent = newName;
+
+                    nameLabel.style.display = 'inline-block';
+                    nameInput.style.display = 'none';
+                    nameBtn.textContent = '변경';
+                }
+            };
+
+            nameInput.onkeydown = (e) => {
+                if (e.key === 'Enter') nameBtn.click();
+                if (e.key === 'Escape') {
+                    editing = false;
+                    nameLabel.style.display = 'inline-block';
+                    nameInput.style.display = 'none';
+                    nameBtn.textContent = '변경';
+                }
+            };
+
+            nameBox.appendChild(nameLabel);
+            nameBox.appendChild(nameInput);
+            nameBox.appendChild(nameBtn);
+            menu.appendChild(nameBox);
+
+
+            // =========================
+            // 3) semantic type 판별
+            // =========================
+            const semanticType = getLayerSemanticType(layerData.layer);
+
+            // =========================
+            // 4) 타입별 스타일 UI
+            // =========================
+            const styleBox = document.createElement('div');
+            styleBox.className = 'context-menu-item';
+
+            const colorPicker = (label, key) => {
+                const wrap = document.createElement('div');
+                wrap.style.display = 'flex';
+                wrap.style.justifyContent = 'space-between';
+                wrap.style.alignItems = 'center';
+
+                const span = document.createElement('span');
+                span.textContent = label;
+
+                const controlWrap = document.createElement('div');
+                controlWrap.style.display = 'flex';
+                controlWrap.style.alignItems = 'center';
+                controlWrap.style.gap = '8px';
+
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.value = layerData.style?.[key] || '#ffffff';
+
+                const hexCode = document.createElement('span');
+                hexCode.className = 'color-code';
+                hexCode.textContent = input.value.toUpperCase();
+
+                input.oninput = () => {
+                    layerData.style = layerData.style || {};
+                    layerData.style[key] = input.value;
+                    hexCode.textContent = input.value.toUpperCase();
+                    layerData.updateStyle?.();
+                };
+
+                controlWrap.append(input, hexCode);
+                wrap.append(span, controlWrap);
+                return wrap;
+            };
+
+            const rangeSlider = (label, min, max, key) => {
+                const wrap = document.createElement('div');
+                wrap.style.display = 'flex';
+                wrap.style.justifyContent = 'space-between';
+                wrap.style.alignItems = 'center';
+
+                const span = document.createElement('span');
+                span.textContent = label;
+
+                const controlWrap = document.createElement('div');
+                controlWrap.style.display = 'flex';
+                controlWrap.style.alignItems = 'center';
+                controlWrap.style.gap = '8px';
+
+                const input = document.createElement('input');
+                input.type = 'range';
+                input.min = min;
+                input.max = max;
+                input.value = layerData.style?.[key] || min;
+                input.style.width = '100px';
+
+                const valueSpan = document.createElement('span');
+                valueSpan.textContent = input.value;
+                valueSpan.style.fontSize = '11px';
+                valueSpan.style.color = '#cccccc';
+                valueSpan.style.minWidth = '25px';
+                valueSpan.style.textAlign = 'right';
+
+                input.oninput = () => {
+                    layerData.style = layerData.style || {};
+                    layerData.style[key] = input.value;
+                    valueSpan.textContent = input.value;
+                    layerData.updateStyle?.();
+                };
+
+                controlWrap.append(input, valueSpan);
+                wrap.append(span, controlWrap);
+                return wrap;
+            };
+
+            const iconSelector = (label, key) => {
+                const wrap = document.createElement('div');
+                wrap.style.display = 'flex';
+                wrap.style.justifyContent = 'space-between';
+                wrap.style.alignItems = 'center';
+
+                const span = document.createElement('span');
+                span.textContent = label;
+
+                const select = document.createElement('select');
+                select.style.backgroundColor = '#3c3c3c';
+                select.style.color = '#cccccc';
+                select.style.border = '1px solid #555';
+                select.style.borderRadius = '3px';
+                select.style.padding = '4px 8px';
+                select.style.fontSize = '11px';
+                select.style.cursor = 'pointer';
+                select.style.outline = 'none';
+                select.style.minWidth = '120px';
+
+                const options = [
+                    { value: 'circle', text: '● 원형' },
+                    { value: 'pin', text: '📍 핀' },
+                    { value: 'star', text: '⭐ 별' },
+                    { value: 'home', text: '🏠 집' },
+                    { value: 'flag', text: '🚩 깃발' }
+                ];
+
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = opt.text;
+                    select.appendChild(option);
+                });
+
+                select.value = layerData.style?.[key] || 'circle';
+
+                select.onchange = () => {
+                    layerData.style = layerData.style || {};
+                    layerData.style[key] = select.value;
+                    console.log('아이콘 타입 변경:', select.value);
+                    layerData.updateStyle?.();
+                };
+
+                wrap.append(span, select);
+                return wrap;
+            };
+
+            // 타입별 UI 분기
+            if (semanticType === "point") {
+                styleBox.appendChild(colorPicker('점 색상', 'pointColor'));
+                styleBox.appendChild(rangeSlider('점 크기', 1, 50, 'pointSize'));
+                styleBox.appendChild(iconSelector('아이콘 종류', 'iconType'));
+            }
+
+            if (semanticType === "line") {
+                styleBox.appendChild(colorPicker('선 색상', 'lineColor'));
+                styleBox.appendChild(rangeSlider('선 두께', 1, 20, 'lineWidth'));
+            }
+
+            if (semanticType === "polygon") {
+                styleBox.appendChild(colorPicker('면색상', 'fillColor'));
+                styleBox.appendChild(rangeSlider('면투명도', 0, 100, 'fillOpacity'));
+
+                const divider = document.createElement('div');
+                divider.style.height = '1px';
+                divider.style.backgroundColor = '#454545';
+                divider.style.margin = '8px 0';
+                styleBox.appendChild(divider);
+
+                styleBox.appendChild(colorPicker('선색상', 'lineColor'));
+                styleBox.appendChild(rangeSlider('선투명도', 0, 100, 'strokeOpacity'));
+            }
+
+            if (styleBox.children.length > 0) {
+                menu.appendChild(styleBox);
+            }
+
+            // =========================
+            // 5) 테이블 열기
+            // =========================
+            const layerFileName = layerData.fileName || layerData.label?.textContent;
+            if (layerFileName) {
+                const tableName = findSqliteTable(layerFileName);
+                if (tableName) {
+                    addMenuItem('테이블 열기', () => {
+                        showBottomPanel();
+                        document.getElementById('sqlTableSelect').value = tableName;
+                        runDefaultQuery(tableName);
+                        hideContextMenu();
+                    });
+                }
+            }
+
+            // =========================
+            // 6) 레이어 제거
+            // =========================
+            addMenuItem('레이어 제거', () => {
+                layerData.removeBtn?.click();
+                hideContextMenu();
+            }, true);
+  
+        }
+
+
         // 사이드바 탭 토글 기능
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 앱 버전 표시
+            if (window.electronAPI?.getAppVersion) {
+                const version = await window.electronAPI.getAppVersion();
+                document.getElementById('app-version').textContent = `v${version}`;
+                document.title = `XDViewer v${version}`;
+            }
+
+            // GitHub 링크 클릭 이벤트
+            const githubLink = document.getElementById('github-link');
+            if (githubLink) {
+                githubLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.electronAPI.openExternal('https://github.com/XDBuilder/XDViewer');
+                });
+            }
+
+            // 베이스맵 변경
+            let currentBasemap = null;
+            const basemapSelect = document.getElementById('basemapSelect');
+            const basemapQuality = document.getElementById('basemapQuality');
+
+            function applyBasemap(type) {
+                const t = parseInt(type);
+                // 기존 베이스맵 제거
+                if (currentBasemap) {
+                    currentBasemap.clear();
+                    currentBasemap = null;
+                }
+                if (t === 0) return;
+                if (t === 11) { basemapSelect.value = '0'; return; }
+
+                switch (t) {
+                    case 1:  currentBasemap = Module.GoogleMap(); currentBasemap.layername = 'normal'; break;
+                    case 2:  currentBasemap = Module.GoogleMap(); currentBasemap.layername = 'terrain'; break;
+                    case 3:  currentBasemap = Module.GoogleMap(); currentBasemap.layername = 'vectorhybrid'; break;
+                    case 4:  currentBasemap = Module.GoogleMap(); currentBasemap.layername = 'satellitehybrid'; break;
+                    case 5:  currentBasemap = Module.GoogleMap(); currentBasemap.layername = 'satellite'; break;
+                    case 6:  currentBasemap = Module.ArcMap(); currentBasemap.layername = 'normal'; break;
+                    case 7:  currentBasemap = Module.ArcMap(); currentBasemap.layername = 'terrain'; break;
+                    case 8:  currentBasemap = Module.ArcMap(); currentBasemap.layername = 'vectorhybrid'; break;
+                    case 9:  currentBasemap = Module.ArcMap(); currentBasemap.layername = 'satellite'; break;
+                    case 10: currentBasemap = Module.OpenStreetMap(); currentBasemap.layername = 'normal'; break;
+                }
+                if (currentBasemap) {
+                    const quality = basemapQuality.value;
+                    currentBasemap.quality = quality;
+                    currentBasemap.zerolevelOffset = (quality === 'low') ? 0 : 1;
+                    currentBasemap.refresh();
+                }
+            }
+
+            basemapSelect.addEventListener('change', (e) => applyBasemap(e.target.value));
+            basemapQuality.addEventListener('change', () => {
+                if (currentBasemap) {
+                    const quality = basemapQuality.value;
+                    currentBasemap.quality = quality;
+                    currentBasemap.zerolevelOffset = (quality === 'low') ? 0 : 1;
+                    currentBasemap.refresh();
+                }
+            });
+
             const tabButtons = document.querySelectorAll('.tab-button');
             const sidebarPanel = document.getElementById('sidebar-panel');
+            const tabbar = document.getElementById('tabbar');
             const mapElement = document.getElementById('map');
-            let currentTab = 'layers';
+            const contextMenu = document.getElementById('contextMenu');
+            let currentTab = null;
+            let currentContextLayer = null;
+
+            // WebGL canvas가 포커스를 가져가지 않도록 설정
+            const disableCanvasFocus = () => {
+                const canvases = mapElement.querySelectorAll('canvas');
+                canvases.forEach(canvas => {
+                    canvas.tabIndex = -1;
+                });
+            };
+            // 초기 설정 및 MutationObserver로 동적 canvas 감시
+            disableCanvasFocus();
+            new MutationObserver(disableCanvasFocus).observe(mapElement, { childList: true, subtree: true });
 
             // 사이드바 닫기 함수
             function closeSidebar() {
                 if (!sidebarPanel.classList.contains('collapsed')) {
                     sidebarPanel.classList.add('collapsed');
+                    tabbar.classList.add('transparent');
                     tabButtons.forEach(btn => btn.classList.remove('active'));
                     currentTab = null;
                 }
             }
+
+            // 전역 클릭 시 컨텍스트 메뉴 숨기기
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.context-menu')) {
+                    hideContextMenu();
+                }
+            });
 
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
@@ -70,6 +1109,7 @@
                     } else {
                         // 다른 탭 클릭 시 패널 열기
                         sidebarPanel.classList.remove('collapsed');
+                        tabbar.classList.remove('transparent');
 
                         // 모든 탭 버튼과 패널 비활성화
                         tabButtons.forEach(btn => btn.classList.remove('active'));
@@ -83,10 +1123,21 @@
                 });
             });
 
-            // 지도 클릭 시 사이드바 닫기
+            // 지도 클릭 시 확장 메뉴 또는 사이드바 닫기
             mapElement.addEventListener('mousedown', (e) => {
                 // 사이드바 영역 클릭은 제외
                 if (!e.target.closest('#sidebar')) {
+                    // 확장 메뉴가 열려있는지 확인
+                    const expandedLayer = document.querySelector('.layer-item-container.expanded');
+
+                    if (expandedLayer) {
+                        // 확장 메뉴가 열려있으면 먼저 닫기
+                        expandedLayer.classList.remove('expanded');
+                        e.stopPropagation();
+                        return;
+                    }
+
+                    // 확장 메뉴가 없으면 사이드바 닫기
                     closeSidebar();
                 }
             });
@@ -95,6 +1146,358 @@
             mapElement.addEventListener('wheel', (e) => {
                 closeSidebar();
             });
+
+            // ESC 키로 선택 해제
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    // 선택된 객체가 있으면 해제
+                    if (selectedObject || selectionPanel.style.display === 'block') {
+                        // 하이라이트 제거
+                        if (highlightedObjectId && selectedLayer) {
+                            try {
+                                const obj = selectedLayer.keyAtObject(highlightedObjectId);
+                                if (obj && typeof obj.setHighlight === 'function') {
+                                    obj.setHighlight(false);
+                                }
+                            } catch (err) {
+                                console.log('하이라이트 제거 오류:', err.message);
+                            }
+                        }
+
+                        selectedObject = null;
+                        selectedLayer = null;
+                        highlightedObjectId = null;
+                        selectionPanel.style.display = 'none';
+                        console.log('ESC로 선택 해제');
+                    }
+                }
+            });
+
+            // 선택 정보 패널 생성
+            const selectionPanel = document.createElement('div');
+            selectionPanel.id = 'selection-panel';
+            selectionPanel.style.cssText = `
+                position: fixed;
+                right: 20px;
+                bottom: 20px;
+                background-color: #252526;
+                border: 1px solid #3c3c3c;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+                padding: 16px;
+                min-width: 300px;
+                max-width: 400px;
+                max-height: 400px;
+                overflow-y: auto;
+                z-index: 3000;
+                display: none;
+                color: #cccccc;
+                font-size: 13px;
+            `;
+            document.body.appendChild(selectionPanel);
+
+            // 지도 클릭 시 객체 선택
+            let selectedObject = null;
+            let selectedLayer = null;
+            let highlightedObjectId = null;
+
+            mapElement.addEventListener('click', (e) => {
+                // 사이드바나 컨텍스트 메뉴, 선택 패널 클릭이 아닌 경우에만 처리
+                if (e.target.closest('#sidebar') ||
+                    e.target.closest('.context-menu') ||
+                    e.target.closest('#selection-panel')) {
+                    return;
+                }
+
+                // 클릭 좌표 계산
+                const rect = mapElement.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                var screen_xy = new Module.JSVector2D(x, y);
+
+                // 3DS 배치 모드
+                if (pending3DS && typeof Module !== 'undefined') {
+                    console.log("pending3DS:",pending3DS);
+                    // ScreenToWorld로 클릭 지점의 경위도 가져오기                    
+                        const sw = Module.getMap().ScreenToMapPointEX(screen_xy);
+                        console.log("sw:",sw);
+                        if (sw && sw.Longitude !== undefined) {                            
+                            console.log('3DS 배치: lon:', sw.Longitude, 'lat:', sw.Latitude, 'alt:', sw.Altitude);                            
+                            load3DSAtPosition(pending3DS.filePath, pending3DS.fileName, sw);
+                        }
+
+                    cancel3DSPlacement();
+                }
+
+                console.log('지도 클릭:', x, y);
+
+                // XDWorld API를 사용하여 객체 선택 시도
+                try {
+                    if (typeof Module !== 'undefined') {
+                        // 이전 하이라이트 제거
+                        if (highlightedObjectId && selectedLayer) {
+                            try {
+                                const oldObj = selectedLayer.keyAtObject(highlightedObjectId);
+                                if (oldObj && typeof oldObj.setHighlight === 'function') {
+                                    oldObj.setHighlight(false);
+                                }
+                            } catch (e) {
+                                console.log('이전 하이라이트 제거 중 오류:', e.message);
+                            }
+                        }
+
+                        let pickedInfo = null;
+                        let pickedObject = null;
+                        let pickedLayer = null;
+                        let worldPos = null;  // 스코프 확장을 위해 여기서 선언
+
+                        // 방법 1: JSLayer의 getPickInfoAtView 메서드 사용
+                        // 화면 좌표에서 레이 생성
+                        const camera = Module.getViewCamera();
+                        if (camera) {
+                            // 카메라 위치 가져오기
+                            const cameraPos = camera.getLocation();
+
+                            // 화면 좌표를 월드 좌표로 변환 시도
+                            if (typeof Module.ScreenToWorld === 'function') {
+                                worldPos = Module.ScreenToWorld(x, y);
+                            } else if (typeof camera.screenToWorld === 'function') {
+                                worldPos = camera.screenToWorld(x, y);
+                            }
+
+                            if (cameraPos && worldPos) {
+                                console.log('카메라 위치:', cameraPos, '월드 좌표:', worldPos);
+
+                                // 모든 레이어를 순회하며 피킹 시도
+                                const layerList = new Module.JSLayerList(true);
+                                const layerCount = layerList.getCount();
+
+                                for (let i = 0; i < layerCount; i++) {
+                                    const layer = layerList.indexAtLayer(i);
+                                    if (!layer || !layer.getVisible()) continue;
+
+                                    // 레이어가 선택 가능한지 확인
+                                    if (typeof layer.getSelectable === 'function' && !layer.getSelectable()) {
+                                        continue;
+                                    }
+
+                                    // getPickInfoAtView 메서드 사용
+                                    if (typeof layer.getPickInfoAtView === 'function') {
+                                        try {
+                                            const info = layer.getPickInfoAtView(cameraPos, worldPos);
+                                            if (info && info.objectKey) {
+                                                pickedInfo = info;
+                                                pickedLayer = layer;
+                                                console.log('피킹 성공 (getPickInfoAtView):', info);
+                                                break;
+                                            }
+                                        } catch (e) {
+                                            console.log('getPickInfoAtView 오류:', e.message);
+                                        }
+                                    }
+                                }
+
+                                // pickedInfo에서 실제 객체 가져오기
+                                if (pickedInfo && pickedInfo.objectKey && pickedLayer) {
+                                    pickedObject = pickedLayer.keyAtObject(pickedInfo.objectKey);
+                                    if (!pickedObject) {
+                                        console.warn('objectKey로 객체를 찾을 수 없음:', pickedInfo.objectKey);
+                                    }
+                                }
+                            }
+                        }
+
+                        // 방법 2: worldPos로 근접 검색 (대체 방법)
+                        if (!pickedObject && worldPos) {
+                            console.log('getPickInfoAtView 실패. 근접 검색 시도...');
+
+                            const layerList = new Module.JSLayerList(true);
+                            const layerCount = layerList.getCount();
+                            let minDistance = Infinity;
+                            let closestObject = null;
+                            let closestLayer = null;
+
+                            for (let i = 0; i < layerCount; i++) {
+                                const layer = layerList.indexAtLayer(i);
+                                if (!layer || !layer.getVisible()) continue;
+
+                                const objectCount = layer.getCount();
+                                for (let j = 0; j < objectCount; j++) {
+                                    try {
+                                        const obj = layer.indexAtObject(j);
+                                        if (!obj) continue;
+
+                                        // 객체 위치 가져오기
+                                        let objPos = null;
+                                        if (typeof obj.getPosition === 'function') {
+                                            objPos = obj.getPosition();
+                                        } else if (obj.position) {
+                                            objPos = obj.position;
+                                        }
+
+                                        if (objPos) {
+                                            // 거리 계산
+                                            const dx = (objPos.longitude || objPos.x || 0) - (worldPos.longitude || worldPos.x || 0);
+                                            const dy = (objPos.latitude || objPos.y || 0) - (worldPos.latitude || worldPos.y || 0);
+                                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                                            // 임계값 이내의 가장 가까운 객체 선택
+                                            if (distance < 0.001 && distance < minDistance) {
+                                                minDistance = distance;
+                                                closestObject = obj;
+                                                closestLayer = layer;
+                                            }
+                                        }
+                                    } catch (e) {
+                                        // 무시
+                                    }
+                                }
+                            }
+
+                            if (closestObject) {
+                                pickedObject = closestObject;
+                                pickedLayer = closestLayer;
+                                console.log('근접 검색 성공:', closestObject, '거리:', minDistance);
+                            }
+                        }
+
+                        if (pickedObject) {
+                            selectedObject = pickedObject;
+                            selectedLayer = pickedLayer;
+                            console.log('선택된 객체:', pickedObject);
+
+                            // 객체 정보 표시
+                            displaySelectionInfo(pickedObject, pickedInfo);
+
+                            // 하이라이트 적용 시도
+                            if (typeof pickedObject.setHighlight === 'function') {
+                                pickedObject.setHighlight(true);
+                                highlightedObjectId = pickedObject.getId ? pickedObject.getId() : (pickedInfo ? pickedInfo.objectKey : null);
+                            } else {
+                                console.log('setHighlight 메서드를 사용할 수 없음');
+                            }
+                        } else {
+                            // 빈 공간 클릭 - 선택 해제
+                            selectedObject = null;
+                            selectedLayer = null;
+                            highlightedObjectId = null;
+                            selectionPanel.style.display = 'none';
+                            console.log('선택 해제 (객체를 찾을 수 없음)');
+                        }
+                    }
+                } catch (err) {
+                    console.error('객체 선택 오류:', err);
+                    console.error('오류 스택:', err.stack);
+                }
+            });
+
+            // 선택된 객체 정보 표시 함수
+            function displaySelectionInfo(obj, pickInfo) {
+                if (!obj) {
+                    selectionPanel.style.display = 'none';
+                    return;
+                }
+
+                let infoHTML = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">';
+                infoHTML += '<h3 style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600;">선택된 객체</h3>';
+                infoHTML += '<button onclick="document.getElementById(\'selection-panel\').style.display=\'none\'" style="background: transparent; border: none; color: #cccccc; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px;">×</button>';
+                infoHTML += '</div>';
+
+                // 레이어 이름 (pickInfo에서 가져오기)
+                if (pickInfo && pickInfo.layerName) {
+                    infoHTML += `<div style="margin-bottom: 8px;"><span style="color: #858585;">레이어:</span> ${pickInfo.layerName}</div>`;
+                }
+
+                // 객체 타입
+                let objType = '알 수 없음';
+                if (typeof obj.getType === 'function') {
+                    const type = obj.getType();
+                    if (type === Module.ELT_3DPOINT) objType = '점 (Point)';
+                    else if (type === Module.ELT_3DLINE) objType = '선 (LineString)';
+                    else if (type === Module.ELT_POLYHEDRON) objType = '면 (Polygon)';
+                    else objType = `타입: ${type}`;
+                } else {
+                    // 객체 클래스명으로 타입 추정
+                    const className = obj.constructor ? obj.constructor.name : '';
+                    if (className.includes('Point')) objType = '점 (Point)';
+                    else if (className.includes('Line')) objType = '선 (LineString)';
+                    else if (className.includes('Polygon')) objType = '면 (Polygon)';
+                }
+
+                infoHTML += `<div style="margin-bottom: 8px;"><span style="color: #858585;">타입:</span> ${objType}</div>`;
+
+                // 객체 ID/Key
+                const objectId = pickInfo && pickInfo.objectKey ? pickInfo.objectKey : (typeof obj.getId === 'function' ? obj.getId() : obj.id);
+                if (objectId) {
+                    infoHTML += `<div style="margin-bottom: 8px;"><span style="color: #858585;">ID:</span> ${objectId}</div>`;
+                }
+
+                // 위치 정보 (pickInfo.position 우선, 없으면 obj.getPosition() 사용)
+                let pos = null;
+                if (pickInfo && pickInfo.position) {
+                    pos = pickInfo.position;
+                } else if (typeof obj.getPosition === 'function') {
+                    pos = obj.getPosition();
+                } else if (obj.position) {
+                    pos = obj.position;
+                }
+
+                if (pos) {
+                    infoHTML += '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #3c3c3c;">';
+                    infoHTML += '<div style="color: #ffffff; font-weight: 600; margin-bottom: 8px;">위치</div>';
+                    if (pos.longitude !== undefined || pos.x !== undefined) {
+                        const lon = pos.longitude !== undefined ? pos.longitude : pos.x;
+                        infoHTML += `<div style="margin-bottom: 4px;"><span style="color: #858585;">경도:</span> ${lon.toFixed(6)}°</div>`;
+                    }
+                    if (pos.latitude !== undefined || pos.y !== undefined) {
+                        const lat = pos.latitude !== undefined ? pos.latitude : pos.y;
+                        infoHTML += `<div style="margin-bottom: 4px;"><span style="color: #858585;">위도:</span> ${lat.toFixed(6)}°</div>`;
+                    }
+                    if (pos.altitude !== undefined || pos.z !== undefined) {
+                        const alt = pos.altitude !== undefined ? pos.altitude : pos.z;
+                        infoHTML += `<div style="margin-bottom: 4px;"><span style="color: #858585;">고도:</span> ${alt.toFixed(2)}m</div>`;
+                    }
+                    infoHTML += '</div>';
+                }
+
+                // 스타일 정보 (색상 등)
+                if (typeof obj.getStyle === 'function') {
+                    const style = obj.getStyle();
+                    if (style) {
+                        infoHTML += '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #3c3c3c;">';
+                        infoHTML += '<div style="color: #ffffff; font-weight: 600; margin-bottom: 8px;">스타일</div>';
+
+                        // 색상 정보
+                        if (typeof style.getColor === 'function') {
+                            const color = style.getColor();
+                            if (color) {
+                                infoHTML += `<div style="margin-bottom: 4px;"><span style="color: #858585;">색상:</span> RGBA(${color.r || 0}, ${color.g || 0}, ${color.b || 0}, ${color.a || 255})</div>`;
+                            }
+                        }
+
+                        // 선 두께
+                        if (typeof style.getWidth === 'function') {
+                            infoHTML += `<div style="margin-bottom: 4px;"><span style="color: #858585;">두께:</span> ${style.getWidth()}</div>`;
+                        }
+
+                        infoHTML += '</div>';
+                    }
+                }
+
+                // 속성 정보 (GeoJSON properties 등)
+                if (obj.properties) {
+                    infoHTML += '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #3c3c3c;">';
+                    infoHTML += '<div style="color: #ffffff; font-weight: 600; margin-bottom: 8px;">속성</div>';
+                    for (const [key, value] of Object.entries(obj.properties)) {
+                        infoHTML += `<div style="margin-bottom: 4px;"><span style="color: #858585;">${key}:</span> ${value}</div>`;
+                    }
+                    infoHTML += '</div>';
+                }
+
+                selectionPanel.innerHTML = infoHTML;
+                selectionPanel.style.display = 'block';
+            }
+
         });
 
         // 랜덤 색상 생성 함수
@@ -196,7 +1599,47 @@
                 filePath = filePath.replace("File:///", "");
             }
             filePath = filePath.replace(/\\/g, '/'); // 역슬래시를 슬래시로 변경
+            if (filePath.endsWith('.las')) {
+                const info = window.electronAPI.parseLASHeader(filePath);
+                const fileName = filePath.split(/[/\\]/).pop(); // sample.las
 
+                if (info) {
+                    console.log('LAS-포인트수:', info.pointCount);
+                    console.log('Bounding Box:', info.bbox);
+                    alert(
+                        '현재지원하지 않는 파일 형식입니다.\n' + filePath + '\n' +
+                        '허용된 파일: .geojson, .meta, tileset.json\n\n' +
+                        'LAS 요약정보\n' +
+                        '전체포인트수: ' + info.pointCount + '\n' +
+                        'Bounding Box: ' + JSON.stringify(info.bbox) + '\n\n' +
+                        '3DTiles(PNTS)로 변환하려면:\n' +
+                        'npm install -g @cesium/3d-tiles-tools\n' +
+                        '3d-tiles-tools las2pnts --input ' + filePath + ' --output output_folder'
+                    );
+                }else{
+                    alert('LAS 파일을 읽는 중 오류가 발생했습니다.');
+                }
+
+            }
+            if(filePath.endsWith('.tif') || filePath.endsWith('.tiff')) {
+                window.electronAPI.parseTIFHeader(filePath)
+                .then(info => {
+                    if (info) {
+                        console.log(info);
+                        alert(
+                            '현재지원하지 않는 파일 형식입니다.\n' + filePath + '\n' +
+                            'TIF 기본정보\n' +
+                            '크기: ' + info.width + ' x ' + info.height + '\n' +
+                            'Bounding Box: ' + JSON.stringify(info.bbox) + '\n' +
+                            'Samples Per Pixel: ' + info.samplesPerPixel + '\n' +
+                            'Bits Per Sample: ' + info.bitsPerSample
+                        );
+                    } else {
+                        alert('TIF 파일을 읽는 중 오류가 발생했습니다.');
+                    }
+                });
+                
+            }
             if (filePath.endsWith('tileset.json')) {
                 // tileset.json 파일이면 3DTILES 레이어로 추가
                 let layerList = new Module.JSLayerList(true);
@@ -229,15 +1672,34 @@
                 label.title = parentFolder; // 마우스 오버 시 전체 이름 표시
                 label.style.cursor = 'pointer'; // 클릭 가능함을 표시
                 label.addEventListener('click', () => {
-                    const jsonData = window.electronAPI.readJsonFile(filePath);
-                    var trs = jsonData['root']['transform'];
-                    var lla = ecefToLla(trs[12], trs[13], trs[14]);
-                    Module.getViewCamera().move(new Module.JSVector3D(lla.lonDeg, lla.latDeg, lla.h + 1000), 89.9, 0, 0);
+                    try {
+                        const jsonData = window.electronAPI.readJsonFile(filePath);
+                        const trs = jsonData?.root?.transform;
+                        const region = jsonData?.root?.boundingVolume?.region;
+
+                        if (region && region.length >= 6) {
+                            // region [west, south, east, north, minH, maxH] (라디안) - 가장 정확
+                            const RAD2DEG = 180 / Math.PI;
+                            const cenLon = ((region[0] + region[2]) / 2) * RAD2DEG;
+                            const cenLat = ((region[1] + region[3]) / 2) * RAD2DEG;
+                            const cenAlt = region[5] || 500;
+                            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, cenAlt + 1000), 89.9, 0, 0);
+                        } else if (trs && trs.length >= 15) {
+                            // transform에서 ECEF → 경위도 변환 (region 없을 때 폴백)
+                            const lla = ecefToLla(trs[12], trs[13], trs[14]);
+                            Module.getViewCamera().move(new Module.JSVector3D(lla.lonDeg, lla.latDeg, lla.h + 1000), 89.9, 0, 0);
+                        } else {
+                            console.warn('tileset.json에 위치 정보가 없습니다.');
+                        }
+                    } catch (e) {
+                        console.error('tileset.json 읽기 오류:', e.message);
+                    }
                 });
 
                 // x 제거 버튼
                 const removeBtn = document.createElement('button');
-                removeBtn.textContent = "X";
+                removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+                removeBtn.title = `${label.textContent} 레이어를 삭제합니다`;
                 removeBtn.addEventListener('click', () => {
                     Module.XDEMapRemoveLayer(label.textContent);
                     layerItem.remove();
@@ -249,6 +1711,21 @@
                 layerItem.appendChild(label);
                 layerItem.appendChild(removeBtn);
 
+                // 컨텍스트 메뉴 추가
+                layerItem.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    window.currentContextLayer = {
+                        layerItem: layerItem,
+                        layer: layer,
+                        label: label,
+                        removeBtn: removeBtn
+                    };
+
+                    showContextMenu(e, layerItem);
+                });
+
                 // 드래그 앤 드롭 가능하게 설정
                 makeDraggable(layerItem, layer, layerList);
 
@@ -256,11 +1733,17 @@
                 index++;
             } else if (filePath.endsWith('.geojson')) {
                 loadGeojsonLayer(filePath);
+            } else if (filePath.endsWith('.csv')) {
+                loadCsvLayer(filePath);
+            } else if (filePath.endsWith('.glb') || filePath.endsWith('.gltf')) {
+                loadGltfLayer(filePath);
+            } else if (filePath.toLowerCase().endsWith('.3ds')) {
+                start3DSPlacement(filePath);
             } else if (filePath.endsWith('.meta')) {
                 loadMetaLayer(filePath);
             }
         }
-
+        
         // Electron에서 파일 경로 수신 시 처리
         window.electronAPI.onFilePathReceived((event, filePaths) => {
             // 여러 파일을 받을 수 있도록 filePaths 배열로 처리
@@ -324,7 +1807,7 @@
 
         // 파일 확장자 검증 함수
         function isValidFileType(filePath) {
-            const validExtensions = ['.geojson', '.meta'];
+            const validExtensions = ['.geojson', '.meta', '.las', '.tif', '.tiff', '.csv', '.glb', '.gltf', '.3ds'];
             const fileName = filePath.toLowerCase();
 
             // tileset.json 체크
@@ -368,7 +1851,7 @@
 
                 // 유효하지 않은 파일이 있으면 알림
                 if (invalidFiles.length > 0) {
-                    alert('지원하지 않는 파일 형식입니다.\n허용된 파일: .geojson, .meta, tileset.json\n\n잘못된 파일:\n' + invalidFiles.join('\n'));
+                    alert('지원하지 않는 파일 형식입니다.\n허용된 파일: .geojson, .csv, .meta, tileset.json\n\n잘못된 파일:\n' + invalidFiles.join('\n'));
                 }
 
                 console.log(`Valid files processed: ${validFileCount}, Invalid files: ${invalidFiles.length}`);
@@ -386,10 +1869,12 @@
         window.onresize = function (e) {
             if (typeof Module == 'object') {
                 if (typeof Module.Resize == 'function') {
-                    Module.Resize(window.innerWidth, window.innerHeight); // 모듈 크기 조정
-                    Module.XDRenderData(); // 데이터 렌더링
+                    const mapHeight = bottomPanelVisible ? window.innerHeight - bottomPanelHeight : window.innerHeight;
+                    Module.Resize(window.innerWidth, mapHeight);
+                    Module.XDRenderData();
                 }
             }
+            if (bottomPanelVisible) updateMapSize();
         };
 
         // XDWorld 모듈 설정
@@ -420,6 +1905,17 @@
                     },
                     defaultKey: "dJe!e!iaEpHmEpCrD5QpEQf2#FBrdzDmd(BQDQEQDJdaE(iB"
                 });
+
+                // 로딩 화면 크로스 페이드 (3초 후)
+                setTimeout(function () {
+                    const loadingScreen = document.getElementById('loading-screen');
+                    loadingScreen.classList.add('fade-out');
+                    // 페이드 아웃이 완전히 끝난 후 제거
+                    setTimeout(function () {
+                        loadingScreen.style.display = 'none';
+                    }, 1500); // fade-out 애니메이션 시간과 동일 (1.5초)
+                }, 3000); // 로딩 완료 후 3초 대기
+
                 /*
                                 // 기본 타일 레이어 설정
                                 var layerSimple = Module.getTileLayerList().createXDServerLayer({
@@ -437,6 +1933,10 @@
                                 Module.getViewCamera().setLocation(new Module.JSVector3D(126.9, 37.5, 300.0)); // 초기 카메라 위치 설정
                                 Module.getViewCamera().setTilt(30); // 카메라 기울기 설정
                 */
+
+                // SQLite 및 하단 패널 초기화
+                initSqlite();
+                initBottomPanel();
             }
         };
 
@@ -445,95 +1945,222 @@
         script.src = "https://cdn.xdworld.kr/latest/XDWorldEM.js";
         document.body.appendChild(script);
 
-        function createPointObjects(layer, features, altitude, color) {
+        function createPointObjects(layer, features, altitude, color, customIconUrl, pointSize = 10) {
             var layerName = layer.getName();
-            var pointIcon = getMarkerIcon(layerName, color, false, 0);
 
-            for (let i = 0; i < features.length; i++) {
-                let feature = features[i];
-                let coords = feature.geometry.coordinates;
-                if (!Array.isArray(coords) || coords.length < 2) continue;
-                if (!pointIcon) {
-                    console.error("아이콘 생성 실패");
-                    return;
-                }
-                let id = feature.id || "GEOJSON_POINT_" + i;
-                let lon = coords[0];
-                let lat = coords[1];
-                let alt = coords.length >= 3 ? coords[2] : altitude;
+            if (customIconUrl) {
+                // 커스텀 아이콘 사용 - Symbol 시스템으로 아이콘 등록
+                const iconName = layerName + '_custom_' + Date.now();
+                const img = new Image();
 
-                let point = Module.createPoint(id);
-                point.setPosition(new Module.JSVector3D(lon, lat, alt + 1.5));
-                point.setIcon(pointIcon)
+                img.onload = function () {
+                    // 점 크기에 따라 캔버스 크기 조정
+                    const canvasSize = Math.max(48, pointSize * 2);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = canvasSize;
+                    canvas.height = canvasSize;
+                    const ctx = canvas.getContext('2d');
 
+                    // 투명 배경
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                layer.addObject(point, 0);
-            }
-            layer.rebuildObjectLayer();
-        }
+                    // 이미지를 비율에 맞춰 중앙에 그리기
+                    const maxSize = Math.max(40, pointSize * 1.6);
+                    const imgWidth = img.width;
+                    const imgHeight = img.height;
+                    const aspectRatio = imgWidth / imgHeight;
 
-        function createLineObjects(layer, features, altitude, color) {
-            for (let i = 0; i < features.length; i++) {
-                const feature = features[i];
-                const geometry = feature.geometry;
-                if (!geometry || !geometry.coordinates) continue;
+                    let drawWidth, drawHeight, offsetX, offsetY;
 
-                const id = feature.id || `GEOJSON_LINE_${i}`;
-                const line = Module.createLineString(id);
+                    if (aspectRatio > 1) {
+                        // 가로가 더 긴 경우
+                        drawWidth = maxSize;
+                        drawHeight = maxSize / aspectRatio;
+                    } else {
+                        // 세로가 더 긴 경우 (핀 등)
+                        drawHeight = maxSize;
+                        drawWidth = maxSize * aspectRatio;
+                    }
 
-                const vertexList = new Module.JSVec3Array();
-                const partList = new Module.Collection();
+                    offsetX = (canvas.width - drawWidth) / 2;
+                    offsetY = (canvas.height - drawHeight) / 2;
 
-                if (geometry.type === "LineString") {
-                    partList.addItem(geometry.coordinates.length);
-                    geometry.coordinates.forEach(coord => {
-                        const x = coord[0], y = coord[1], z = coord[2] ?? altitude;
-                        vertexList.push(new Module.JSVector3D(x, y, z + 1.5));
-                    });
-                }
-                else if (geometry.type === "MultiLineString") {
-                    for (const part of geometry.coordinates) {
-                        partList.add(part.length);
-                        for (const coord of part) {
-                            const x = coord[0], y = coord[1], z = coord[2] ?? altitude;
-                            vertexList.push(new Module.JSVector3D(x, y, z + 1.5));
+                    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // Symbol 시스템에 아이콘 등록
+                    if (Module.getSymbol().insertIcon(iconName, imageData.data, canvas.width, canvas.height)) {
+                        const iconObject = Module.getSymbol().getIcon(iconName);
+
+                        // Point 객체 생성 및 아이콘 설정
+                        for (let i = 0; i < features.length; i++) {
+                            try {
+                                let feature = features[i];
+                                let coords = feature.geometry.coordinates;
+                                if (!Array.isArray(coords) || coords.length < 2) continue;
+                                let id = feature.id || "GEOJSON_POINT_" + i;
+                                let lon = coords[0];
+                                let lat = coords[1];
+                                let alt = coords.length >= 3 ? coords[2] : altitude;
+
+                                let point = Module.createPoint(id);
+                                point.setPosition(new Module.JSVector3D(lon, lat, alt + 1.5));
+                                point.setIcon(iconObject);
+                                point.setVisibleRange(true, 0.0, 500000.0);
+                                // 텍스트 표시
+                                const label = feature.properties?.name || '';
+                                if (label) {
+                                    point.setText(label);
+                                    point.setFontStyle('맑은 고딕', 12, 'bold',
+                                        new Module.JSColor(255, 255, 255, 255),
+                                        new Module.JSColor(200, 0, 0, 0));
+                                }
+                                layer.addObject(point, 0);
+                            } catch (e) {
+                                console.error(`포인트 ${i} 생성 오류:`, e.message);
+                            }
+                        }
+                        layer.rebuildObjectLayer();
+                    }
+                };
+
+                img.onerror = function () {
+                    console.error("이미지 로드 실패:", customIconUrl);
+                };
+
+                img.src = customIconUrl;
+            } else {
+                // 기본 색상 점 아이콘 - Symbol 시스템 사용
+                const iconName = layerName + '_circle_' + Date.now();
+                const canvas = document.createElement('canvas');
+                // 점 크기에 따라 캔버스와 반지름 조정
+                const canvasSize = Math.max(24, pointSize * 3);
+                const radius = Math.max(3, pointSize / 2);
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                const ctx = canvas.getContext('2d');
+
+                // 점 그리기
+                ctx.clearRect(0, 0, canvasSize, canvasSize);
+                ctx.beginPath();
+                ctx.arc(canvasSize / 2, canvasSize / 2, radius, 0, 2 * Math.PI, false);
+                ctx.fillStyle = color;
+                ctx.fill();
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                // Symbol 시스템에 아이콘 등록
+                if (Module.getSymbol().insertIcon(iconName, imageData.data, canvas.width, canvas.height)) {
+                    const iconObject = Module.getSymbol().getIcon(iconName);
+
+                    for (let i = 0; i < features.length; i++) {
+                        try {
+                            let feature = features[i];
+                            let coords = feature.geometry.coordinates;
+                            if (!Array.isArray(coords) || coords.length < 2) continue;
+                            let id = feature.id || "GEOJSON_POINT_" + i;
+                            let lon = coords[0];
+                            let lat = coords[1];
+                            let alt = coords.length >= 3 ? coords[2] : altitude;
+
+                            let point = Module.createPoint(id);
+                            point.setPosition(new Module.JSVector3D(lon, lat, alt + 1.5));
+                            point.setIcon(iconObject);
+                            point.setVisibleRange(true, 0.0, 500000.0);
+                            // 텍스트 표시
+                            const label = feature.properties?.name || '';
+                            if (label) {
+                                point.setText(label);
+                                point.setFontStyle('맑은 고딕', 12, 'bold',
+                                    new Module.JSColor(255, 255, 255, 255),
+                                    new Module.JSColor(200, 0, 0, 0));
+                            }
+                            layer.addObject(point, 0);
+                        } catch (e) {
+                            console.error(`포인트 ${i} 생성 오류 (원형):`, e.message);
                         }
                     }
+                    layer.rebuildObjectLayer();
                 }
-                // 스타일 지정
-                var style = new Module.JSPolyLineStyle();
-                style.setWidth(3.0);
-                style.setColor(new Module.JSColor(255, ...colorStringToRGB(color)));
-                line.setStyle(style);
-
-                line.setPartCoordinates(vertexList, partList);
-                layer.addObject(line, 0);
             }
-            layer.rebuildObjectLayer();
         }
 
-        function createPolygonObjects(layer, features, altitude, color) {
+        function createLineObjects(layer, features, altitude, color, width = 3.0, transparency = 0) {
             for (let i = 0; i < features.length; i++) {
-                const feature = features[i];
-                const geometry = feature.geometry;
-                if (!geometry || !geometry.coordinates) continue;
+                try {
+                    const feature = features[i];
+                    const geometry = feature.geometry;
+                    if (!geometry || !geometry.coordinates) continue;
 
-                const id = feature.id || `GEOJSON_POLY_${i}`;
+                    const id = feature.id || `GEOJSON_LINE_${i}`;
+                    const line = Module.createLineString(id);
 
-                if (geometry.type === "Polygon") {
-                    createSinglePolygon(id, geometry.coordinates, color, altitude, layer);
-                }
-                else if (geometry.type === "MultiPolygon") {
-                    for (let j = 0; j < geometry.coordinates.length; j++) {
-                        const partId = `${id}_part${j}`;
-                        createSinglePolygon(partId, geometry.coordinates[j], color, altitude, layer);
+                    const vertexList = new Module.JSVec3Array();
+                    const partList = new Module.Collection();
+
+                    if (geometry.type === "LineString") {
+                        partList.addItem(geometry.coordinates.length);
+                        geometry.coordinates.forEach(coord => {
+                            const x = coord[0], y = coord[1], z = coord[2] ?? altitude;
+                            vertexList.push(new Module.JSVector3D(x, y, z + 1.5));
+                        });
                     }
+                    else if (geometry.type === "MultiLineString") {
+                        for (const part of geometry.coordinates) {
+                            partList.add(part.length);
+                            for (const coord of part) {
+                                const x = coord[0], y = coord[1], z = coord[2] ?? altitude;
+                                vertexList.push(new Module.JSVector3D(x, y, z + 1.5));
+                            }
+                        }
+                    }
+                    // 스타일 지정
+                    var style = new Module.JSPolyLineStyle();
+                    style.setWidth(width);
+                    const rgb = colorStringToRGB(color);
+                    // 투명도를 Alpha 값으로 변환: 투명도 0% = Alpha 255, 투명도 100% = Alpha 0
+                    const alpha = Math.round(255 - (transparency * 2.55));
+                    console.log('라인 색상 (원본):', color, '→ RGB:', rgb, '투명도:', transparency + '%', '→ Alpha:', alpha, '두께:', width);
+                    // JSColor는 ARGB 순서: (Alpha, Red, Green, Blue)
+                    style.setColor(new Module.JSColor(alpha, rgb[0], rgb[1], rgb[2]));
+                    line.setStyle(style);
+
+                    line.setPartCoordinates(vertexList, partList);
+                    layer.addObject(line, 0);
+                } catch (e) {
+                    console.error(`라인 ${i} 생성 오류:`, e.message);
                 }
             }
             layer.rebuildObjectLayer();
         }
 
-        function createSinglePolygon(id, rings, color, altitude, layer) {
+        function createPolygonObjects(layer, features, altitude, color, strokeColor, fillTransparency = 0, strokeTransparency = 0) {
+            for (let i = 0; i < features.length; i++) {
+                try {
+                    const feature = features[i];
+                    const geometry = feature.geometry;
+                    if (!geometry || !geometry.coordinates) continue;
+
+                    const id = feature.id || `GEOJSON_POLY_${i}`;
+
+                    if (geometry.type === "Polygon") {
+                        createSinglePolygon(id, geometry.coordinates, color, altitude, layer, strokeColor, fillTransparency, strokeTransparency);
+                    }
+                    else if (geometry.type === "MultiPolygon") {
+                        for (let j = 0; j < geometry.coordinates.length; j++) {
+                            const partId = `${id}_part${j}`;
+                            createSinglePolygon(partId, geometry.coordinates[j], color, altitude, layer, strokeColor, fillTransparency, strokeTransparency);
+                        }
+                    }
+                } catch (e) {
+                    console.error(`폴리곤 ${i} 생성 오류:`, e.message);
+                }
+            }
+            layer.rebuildObjectLayer();
+        }
+
+        function createSinglePolygon(id, rings, color, altitude, layer, strokeColor, fillTransparency = 0, strokeTransparency = 0) {
             const polygon = Module.createPolygon(id);
             const allVertices = new Module.Collection();
 
@@ -546,7 +2173,61 @@
 
             const style = new Module.JSPolygonStyle();
             style.setFill(true);
-            style.setFillColor(new Module.JSColor(255, ...colorStringToRGB(color)));
+            const fillRGB = colorStringToRGB(color);
+            // 투명도를 Alpha 값으로 변환: 투명도 0% = Alpha 255, 투명도 100% = Alpha 0
+            const fillAlpha = Math.round(255 - (fillTransparency * 2.55));
+            console.log('폴리곤 면 색상 (원본):', color, '→ RGB:', fillRGB, '투명도:', fillTransparency + '%', '→ Alpha:', fillAlpha);
+            // JSColor는 ARGB 순서: (Alpha, Red, Green, Blue)
+            style.setFillColor(new Module.JSColor(fillAlpha, fillRGB[0], fillRGB[1], fillRGB[2]));
+
+            // 라인 색상 설정
+            if (strokeColor) {
+                const strokeRGB = colorStringToRGB(strokeColor);
+                const strokeAlpha = Math.round(255 - (strokeTransparency * 2.55));
+                console.log('폴리곤 선 색상 (원본):', strokeColor, '→ RGB:', strokeRGB, '투명도:', strokeTransparency + '%', '→ Alpha:', strokeAlpha);
+                try {
+                    // 폴리곤 외곽선을 그리려면 setOutLine을 먼저 호출해야 할 수 있음
+                    if (typeof style.setOutLine === 'function') {
+                        style.setOutLine(true);
+                        console.log('setOutLine(true) 호출 성공');
+                    }
+
+                    // JSColor는 ARGB 순서: (Alpha, Red, Green, Blue)
+                    const lineColor = new Module.JSColor(strokeAlpha, strokeRGB[0], strokeRGB[1], strokeRGB[2]);
+
+                    // 매뉴얼에 따라 setOutLineColor 메서드 사용 (대문자 L)
+                    if (typeof style.setOutLineColor === 'function') {
+                        style.setOutLineColor(lineColor);
+                        console.log('setOutLineColor 호출 성공');
+                    } else if (typeof style.setOutlineColor === 'function') {
+                        style.setOutlineColor(lineColor);
+                        console.log('setOutlineColor 호출 성공');
+                    } else if (typeof style.setStrokeColor === 'function') {
+                        style.setStrokeColor(lineColor);
+                        console.log('setStrokeColor 호출 성공');
+                    } else if (typeof style.setLineColor === 'function') {
+                        style.setLineColor(lineColor);
+                        console.log('setLineColor 호출 성공');
+                    } else {
+                        console.log('폴리곤 선 색상 설정 메서드를 찾을 수 없음');
+                    }
+
+                    if (typeof style.setOutLineWidth === 'function') {
+                        style.setOutLineWidth(2.0);
+                        console.log('폴리곤 선 두께 설정 완료 - OutLineWidth: 2.0');
+                    } else if (typeof style.setLineWidth === 'function') {
+                        style.setLineWidth(2.0);
+                        console.log('폴리곤 선 두께 설정 완료 - LineWidth: 2.0');
+                    } else if (typeof style.setOutlineWidth === 'function') {
+                        style.setOutlineWidth(2.0);
+                        console.log('폴리곤 선 두께 설정 완료 - OutlineWidth: 2.0');
+                    }
+                } catch (e) {
+                    console.error('폴리곤 선 설정 오류:', e.message);
+                }
+            } else {
+                console.log('strokeColor가 제공되지 않음');
+            }
 
             polygon.setStyle(style);
             polygon.setCoordinates(allVertices);
@@ -561,7 +2242,15 @@
             return [parseInt(matches[0]), parseInt(matches[1]), parseInt(matches[2])];
         }
 
-        function getMarkerIcon(_id, _color, returnDataUrl, type) {
+        // XDWorld에서 사용하는 BGR 색상을 RGB rgba 문자열로 변환
+        function convertToBGRColor(rgbaStr) {
+            // XDWorld는 BGR 순서를 사용하므로, 실제 지도에 그려지는 색상을 반환
+            const rgb = colorStringToRGB(rgbaStr);
+            // R과 B를 교체 (BGR로 변환된 결과를 RGB로 다시 표현)
+            return `rgba(${rgb[2]}, ${rgb[1]}, ${rgb[0]}, 1.0)`;
+        }
+
+        function getMarkerIcon(_id, _color, returnDataUrl, type, transparency = 0, strokeColor = null, strokeTransparency = 0) {
             var canvas = document.createElement('canvas');
             var size = 16;
             canvas.width = size;
@@ -571,20 +2260,24 @@
 
             if (type == 0) {
                 // 점
+                const alpha = 1.0 - (transparency / 100);
+                ctx.globalAlpha = alpha;
                 ctx.beginPath();
                 ctx.arc(size / 2, size / 2, size / 4, 0, 2 * Math.PI, false);
                 ctx.fillStyle = _color;
                 ctx.fill();
             } else if (type == 1) {
                 // 선
+                const alpha = 1.0 - (transparency / 100);
+                ctx.globalAlpha = alpha;
                 ctx.beginPath();
                 ctx.moveTo(0, size / 2);
                 ctx.lineTo(size, size / 2);
                 ctx.strokeStyle = _color;
                 ctx.lineWidth = 2;
                 ctx.stroke();
-            } else {
-                // 면
+            } else if (type == 2) {
+                // 폴리곤 (면 + 선을 각각 다른 투명도로)
                 ctx.beginPath();
                 ctx.moveTo(2, 2);
                 ctx.lineTo(size - 2, 2);
@@ -592,11 +2285,20 @@
                 ctx.lineTo(2, size - 2);
                 ctx.closePath();
 
+                // 면 먼저 그리기 (면 투명도 적용)
+                const fillAlpha = 1.0 - (transparency / 100);
+                ctx.globalAlpha = fillAlpha;
                 ctx.fillStyle = _color;
                 ctx.fill();
-                ctx.strokeStyle = "#FFFFFF"; // 테두리 색 (옵션)
-                ctx.lineWidth = 1;
-                ctx.stroke();
+
+                // 선 그리기 (선 색상과 투명도 적용)
+                if (strokeColor) {
+                    const strokeAlpha = 1.0 - (strokeTransparency / 100);
+                    ctx.globalAlpha = strokeAlpha;
+                    ctx.strokeStyle = strokeColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
             }
 
 
@@ -612,6 +2314,391 @@
 
 
 
+        // ============ CSV 처리 ============
+
+        // CSV 텍스트를 2D 배열로 파싱
+        function parseCSV(text) {
+            const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+            const result = [];
+            for (const line of lines) {
+                if (line.trim() === '') continue;
+                // 쉼표 구분, 큰따옴표 내 쉼표 처리
+                const row = [];
+                let cell = '';
+                let inQuote = false;
+                for (let i = 0; i < line.length; i++) {
+                    const ch = line[i];
+                    if (inQuote) {
+                        if (ch === '"' && line[i + 1] === '"') {
+                            cell += '"';
+                            i++;
+                        } else if (ch === '"') {
+                            inQuote = false;
+                        } else {
+                            cell += ch;
+                        }
+                    } else {
+                        if (ch === '"') {
+                            inQuote = true;
+                        } else if (ch === ',') {
+                            row.push(cell.trim());
+                            cell = '';
+                        } else {
+                            cell += ch;
+                        }
+                    }
+                }
+                row.push(cell.trim());
+                result.push(row);
+            }
+            return result;
+        }
+
+        // 컬럼명으로 경도/위도/이름 후보 자동 감지
+        function detectColumns(headers, rows) {
+            const lonKeywords = ['경도', 'lon', 'longitude', 'lng', 'x', 'long'];
+            const latKeywords = ['위도', 'lat', 'latitude', 'y'];
+            const nameKeywords = ['이름', 'name', '명칭', '시설명', '상호', '건물명', '지점명', 'title', 'label'];
+            const valueKeywords = ['값', 'value', '수량', '인구', '금액', 'count', 'amount', '건수', '면적', '비율', 'total', 'sum', 'avg', '평균', '합계'];
+
+            let lonIdx = -1, latIdx = -1, nameIdx = -1, valueIdx = -1;
+            const lower = headers.map(h => h.toLowerCase());
+
+            for (let i = 0; i < lower.length; i++) {
+                for (const kw of lonKeywords) {
+                    if (lower[i].includes(kw) && lonIdx === -1) { lonIdx = i; break; }
+                }
+                for (const kw of latKeywords) {
+                    if (lower[i].includes(kw) && latIdx === -1) { latIdx = i; break; }
+                }
+                for (const kw of nameKeywords) {
+                    if (lower[i].includes(kw) && nameIdx === -1) { nameIdx = i; break; }
+                }
+                for (const kw of valueKeywords) {
+                    if (lower[i].includes(kw) && valueIdx === -1) { valueIdx = i; break; }
+                }
+            }
+
+            // 키워드로 값 컬럼을 못 찾으면, 80% 이상 숫자인 컬럼 자동 감지 (lon/lat 제외)
+            if (valueIdx === -1 && rows && rows.length > 0) {
+                for (let i = 0; i < headers.length; i++) {
+                    if (i === lonIdx || i === latIdx) continue;
+                    let numCount = 0;
+                    const sampleRows = rows.slice(0, Math.min(20, rows.length));
+                    for (const row of sampleRows) {
+                        if (row[i] !== undefined && row[i] !== '' && !isNaN(Number(row[i]))) numCount++;
+                    }
+                    if (numCount / sampleRows.length >= 0.8) { valueIdx = i; break; }
+                }
+            }
+
+            return { lonIdx, latIdx, nameIdx, valueIdx };
+        }
+
+        // CSV 컬럼 선택 모달 표시
+        function showCsvColumnModal(headers, rows, fileName) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('csvModal');
+                const colLon = document.getElementById('csvColLon');
+                const colLat = document.getElementById('csvColLat');
+                const colName = document.getElementById('csvColName');
+                const info = document.getElementById('csvModalInfo');
+                const previewTable = document.getElementById('csvPreviewTable');
+
+                // 정보 표시
+                info.textContent = `파일: ${fileName} | 전체 ${rows.length}건 | 컬럼 ${headers.length}개`;
+
+                // 셀렉트 옵션 생성
+                function fillSelect(select, defaultIdx, allowNone) {
+                    select.innerHTML = '';
+                    if (allowNone) {
+                        const opt = document.createElement('option');
+                        opt.value = '-1';
+                        opt.textContent = '(없음)';
+                        select.appendChild(opt);
+                    }
+                    headers.forEach((h, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.textContent = `[${i}] ${h}`;
+                        select.appendChild(opt);
+                    });
+                    if (defaultIdx >= 0) select.value = defaultIdx;
+                }
+
+                const detected = detectColumns(headers);
+                fillSelect(colLon, detected.lonIdx, false);
+                fillSelect(colLat, detected.latIdx, false);
+                fillSelect(colName, detected.nameIdx, true);
+
+                // 미리보기 테이블
+                function updatePreview() {
+                    const li = parseInt(colLon.value);
+                    const la = parseInt(colLat.value);
+                    const na = parseInt(colName.value);
+                    let html = '<tr>';
+                    html += `<th>#</th>`;
+                    if (na >= 0) html += `<th>${headers[na]}</th>`;
+                    html += `<th>${headers[li] || '경도'}</th>`;
+                    html += `<th>${headers[la] || '위도'}</th>`;
+                    html += '</tr>';
+                    const previewRows = rows.slice(0, 5);
+                    previewRows.forEach((row, i) => {
+                        html += '<tr>';
+                        html += `<td>${i + 1}</td>`;
+                        if (na >= 0) html += `<td>${row[na] || ''}</td>`;
+                        html += `<td>${row[li] || ''}</td>`;
+                        html += `<td>${row[la] || ''}</td>`;
+                        html += '</tr>';
+                    });
+                    previewTable.innerHTML = html;
+                }
+                updatePreview();
+                colLon.onchange = updatePreview;
+                colLat.onchange = updatePreview;
+                colName.onchange = updatePreview;
+
+                modal.style.display = 'flex';
+
+                function cleanup() {
+                    modal.style.display = 'none';
+                    document.getElementById('csvModalOk').onclick = null;
+                    document.getElementById('csvModalCancel').onclick = null;
+                    document.getElementById('csvModalClose').onclick = null;
+                }
+
+                document.getElementById('csvModalOk').onclick = () => {
+                    cleanup();
+                    resolve({
+                        lonIdx: parseInt(colLon.value),
+                        latIdx: parseInt(colLat.value),
+                        nameIdx: parseInt(colName.value)
+                    });
+                };
+                document.getElementById('csvModalCancel').onclick = () => { cleanup(); resolve(null); };
+                document.getElementById('csvModalClose').onclick = () => { cleanup(); resolve(null); };
+            });
+        }
+
+        // CSV 파일 로드 및 Point 레이어 생성
+        async function loadCsvLayer(filePath) {
+            const csvText = window.electronAPI.readCsvFile(filePath);
+            if (!csvText) {
+                alert('CSV 파일을 읽을 수 없습니다.');
+                return;
+            }
+
+            const parsed = parseCSV(csvText);
+            if (parsed.length < 2) {
+                alert('CSV 데이터가 부족합니다. (헤더 + 최소 1행 필요)');
+                return;
+            }
+
+            const headers = parsed[0];
+            const rows = parsed.slice(1);
+            const fileName = filePath.split(/[\/\\]/).pop().replace('.csv', '');
+
+            // SQLite에 데이터 저장
+            if (sqlReady) {
+                const sqlTable = importCsvToSqlite(fileName, headers, rows);
+                if (sqlTable) {
+                    showBottomPanel();
+                    document.getElementById('sqlTableSelect').value = sqlTable;
+                    runDefaultQuery(sqlTable);
+                }
+            }
+
+            // 컬럼 선택 모달 표시
+            const selection = await showCsvColumnModal(headers, rows, fileName);
+            if (!selection) return; // 취소
+
+            const { lonIdx, latIdx, nameIdx } = selection;
+
+            // GeoJSON features로 변환
+            const features = [];
+            let skipped = 0;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const lon = parseFloat(row[lonIdx]);
+                const lat = parseFloat(row[latIdx]);
+                if (isNaN(lon) || isNaN(lat)) { skipped++; continue; }
+                // 경위도 범위 체크
+                if (lon < -180 || lon > 180 || lat < -90 || lat > 90) { skipped++; continue; }
+
+                const name = nameIdx >= 0 ? (row[nameIdx] || '') : `Point_${i}`;
+                features.push({
+                    id: `CSV_POINT_${i}`,
+                    geometry: { type: 'Point', coordinates: [lon, lat, 30] },
+                    properties: { name: name }
+                });
+            }
+
+            if (features.length === 0) {
+                alert('유효한 좌표가 없습니다.\n건너뛴 행: ' + skipped);
+                return;
+            }
+
+            if (skipped > 0) {
+                console.log(`CSV 로드 완료: ${features.length}건 성공, ${skipped}건 건너뜀`);
+            }
+
+            // GeoJSON 형태의 데이터 객체 생성하여 기존 레이어 생성 로직 재사용
+            const data = { features: features };
+            loadGeojsonLayerFromData(fileName, 'Point', data, true);
+        }
+
+        // ============ glTF/GLB 처리 ============
+        function loadGltfLayer(filePath) {
+            const fileName = filePath.split(/[\/\\]/).pop().replace(/\.(glb|gltf)$/i, '');
+            const fileType = filePath.toLowerCase().endsWith('.glb') ? 'glb' : 'gltf';
+
+            // 현재 카메라 위치에 모델 배치
+            const camera = Module.getViewCamera();
+            const cameraPos = camera.getLocation();
+            const pos = new Module.JSVector3D(cameraPos.Longitude, cameraPos.Latitude, 0);
+
+            // glTF 레이어 생성
+            const layerList = new Module.JSLayerList(true);
+            const layer = layerList.createLayer(fileName, Module.ELT_POLYHEDRON);
+
+            const gltfObject = Module.createGLTF(fileName + '_obj_' + index);
+            gltfObject.loadFile({
+                url: filePath,
+                type: fileType,
+                position: pos,
+                rebuild: true,
+            });
+            layer.addObject(gltfObject, 0);
+
+            // 레이어 UI 생성
+            const layerItem = document.createElement('div');
+            layerItem.className = 'layer-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = true;
+            checkbox.addEventListener('change', () => {
+                layer.setVisible(checkbox.checked);
+            });
+
+            const label = document.createElement('span');
+            label.textContent = fileName;
+            label.title = fileName;
+            label.style.cursor = 'pointer';
+            label.addEventListener('click', () => {
+                // 클릭 시 모델 위치로 이동
+                camera.move(pos, 89.9, 0, 0);
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+            removeBtn.title = `${fileName} 레이어를 삭제합니다`;
+            removeBtn.addEventListener('click', () => {
+                Module.XDEMapRemoveLayer(fileName);
+                layerItem.remove();
+                mouseOverInterface(false);
+            });
+
+            layerItem.appendChild(checkbox);
+            layerItem.appendChild(label);
+            layerItem.appendChild(removeBtn);
+
+            makeDraggable(layerItem, layer, layerList);
+            document.getElementById('interface').appendChild(layerItem);
+            index++;
+
+            console.log(`glTF 모델 로드: ${fileName} (${fileType}) at`, cameraPos);
+        }
+
+        // ============ 3DS 처리 ============
+        let pending3DS = null;
+
+        function start3DSPlacement(filePath) {
+            const fileName = filePath.split(/[\/\\]/).pop().replace(/\.3ds$/i, '');
+            pending3DS = { filePath, fileName };
+            document.getElementById('map').style.cursor = 'crosshair';
+
+            let guide = document.getElementById('placement-guide');
+            if (!guide) {
+                guide = document.createElement('div');
+                guide.id = 'placement-guide';
+                guide.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#007acc;color:#fff;padding:8px 20px;border-radius:4px;font-size:13px;z-index:9999;pointer-events:none;';
+                document.body.appendChild(guide);
+            }
+            guide.textContent = '맵을 클릭하면 3DS 모델이 배치됩니다. (ESC: 취소)';
+            guide.style.display = 'block';
+        }
+
+        function cancel3DSPlacement() {
+            pending3DS = null;
+            document.getElementById('map').style.cursor = '';
+            const guide = document.getElementById('placement-guide');
+            if (guide) guide.style.display = 'none';
+        }
+
+        // ESC로 3DS 배치 취소
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && pending3DS) cancel3DSPlacement();
+        });
+
+        async function load3DSAtPosition(filePath, fileName, position) {
+            // 로컬 파일을 HTTP URL로 변환 (XDWorld 엔진은 HTTP URL 필요)
+            const url = await window.electronAPI.getLocalFileUrl(filePath);
+            console.log('3DS 로드 시작 - URL:', url);
+            console.log('3DS 배치 위치 - lon:', position.Longitude, 'lat:', position.Latitude, 'alt:', position.Altitude);
+
+            const layerList = new Module.JSLayerList(true);
+            const layer = layerList.createLayer(fileName, Module.ELT_POLYHEDRON);
+
+            const polygon = Module.createPolygon(fileName + '_obj_' + index);
+            polygon.loadFile({
+                position: position,
+                url: url,
+                align: 'bottom',
+                callback: function () {
+                    layer.addObject(polygon, 0);
+                    console.log(`3DS 모델 로드 완료: ${fileName}`);
+                }
+            });
+
+            // 레이어 UI 생성
+            const layerItem = document.createElement('div');
+            layerItem.className = 'layer-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = true;
+            checkbox.addEventListener('change', () => {
+                layer.setVisible(checkbox.checked);
+            });
+
+            const label = document.createElement('span');
+            label.textContent = fileName;
+            label.title = fileName;
+            label.style.cursor = 'pointer';
+            label.addEventListener('click', () => {
+                const cam = Module.getViewCamera();
+                cam.move(position, 80, 0, 0);
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+            removeBtn.title = `${fileName} 레이어를 삭제합니다`;
+            removeBtn.addEventListener('click', () => {
+                Module.XDEMapRemoveLayer(fileName);
+                layerItem.remove();
+                mouseOverInterface(false);
+            });
+
+            layerItem.appendChild(checkbox);
+            layerItem.appendChild(label);
+            layerItem.appendChild(removeBtn);
+
+            makeDraggable(layerItem, layer, layerList);
+            document.getElementById('interface').appendChild(layerItem);
+            index++;
+        }
+
         function loadGeojsonLayer(filePath) {
             const fileName = filePath.split(/[\/]/).pop().replace('.geojson', '');
             window.electronAPI.readGeoJSON(filePath).then(function (data) {
@@ -620,6 +2707,24 @@
                     return;
                 }
                 const type = data.features[0].geometry.type;
+                loadGeojsonLayerFromData(fileName, type, data);
+            }).catch(err => {
+                console.error("GeoJSON 파일 로드 오류:", err);
+                console.error("파일명:", fileName);
+            });
+        }
+
+        function loadGeojsonLayerFromData(fileName, type, data, skipSqlImport = false) {
+                // SQLite에 GeoJSON 데이터 저장 (CSV에서 호출된 경우 skip)
+                if (!skipSqlImport && sqlReady && data.features) {
+                    const sqlTable = importGeoJsonToSqlite(fileName, data.features);
+                    if (sqlTable) {
+                        showBottomPanel();
+                        document.getElementById('sqlTableSelect').value = sqlTable;
+                        runDefaultQuery(sqlTable);
+                    }
+                }
+
                 const layerList = new Module.JSLayerList(true);
                 let layer = null;
                 switch (type) {
@@ -638,26 +2743,46 @@
                         alert("지원하지 않는 geometry type: " + type);
                         return;
                 }
-                // 랜더러에서 파싱된 데이터 사용
+
+                // 레이어 객체 선택 활성화
+                if (layer && typeof layer.setSelectable === 'function') {
+                    layer.setSelectable(true);
+                    console.log('레이어 선택 이벤트 활성화:', fileName);
+                }
+
+                // 모든 타입에 랜덤 색상 적용
                 const randomColor = 'rgba(' + Math.floor(Math.random() * 256) + ',' +
                     Math.floor(Math.random() * 256) + ',' +
                     Math.floor(Math.random() * 256) + ', 1.0)';
+
+                // 폴리곤용 라인 색상 (더 어두운 색상)
+                const strokeColor = 'rgba(' + Math.floor(Math.random() * 200) + ',' +
+                    Math.floor(Math.random() * 200) + ',' +
+                    Math.floor(Math.random() * 200) + ', 1.0)';
+
                 switch (type) {
                     case "Point":
                         createPointObjects(layer, data.features, 0.0, randomColor);
                         break;
                     case "LineString":
                     case "MultiLineString":
-                        createLineObjects(layer, data.features, 0.0, randomColor);
+                        createLineObjects(layer, data.features, 0.0, randomColor, 3.0);
                         break;
                     case "Polygon":
                     case "MultiPolygon":
-                        createPolygonObjects(layer, data.features, 0.0, randomColor);
+                        createPolygonObjects(layer, data.features, 0.0, randomColor, strokeColor);
                         break;
                 }
                 // 새 레이어 UI 생성
-                const layerItem = document.createElement('div');
-                layerItem.className = 'layer-item';
+                const layerContainer = document.createElement('div');
+                layerContainer.className = 'layer-item-container';
+
+                const layerHeader = document.createElement('div');
+                layerHeader.className = 'layer-item-header';
+
+                // 속성 패널용 컨테이너 (별도로 저장)
+                const propertiesContainer = document.createElement('div');
+                propertiesContainer.className = 'layer-item-properties';
 
                 // 체크박스
                 const checkbox = document.createElement('input');
@@ -667,86 +2792,751 @@
                     layer.setVisible(checkbox.checked);
                 });
 
-                // geometry 타입에 따른 아이콘
+                // geometry 타입에 따른 아이콘 (원본 색상 사용, 투명도 0으로 시작)
                 let iconElement = null;
                 if (type === "Point") {
-                    // 지도용: getPointMarkerIcon(fileName, randomColor)
-                    // 리스트용: getPointMarkerIcon(fileName, randomColor, true)
-                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 0);
+                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 0, 0);
                     iconElement = document.createElement('img');
                     iconElement.src = iconUrl;
-                    iconElement.style.width = '12px';
-                    iconElement.style.height = '12px';
-                    //iconElement.style.position = 'relative';
-                    //iconElement.style.margin = '0 4 16 0px';
-                    //iconElement.innerHTML = `<div style="position:relative;top:7px;left:2px;width:3px;height:3px;background:${randomColor};border-radius:1px;"></div>`;
+                    iconElement.style.width = '24px';
+                    iconElement.style.height = '24px';
                 } else if (type === "LineString" || type === "MultiLineString") {
-                    // 지도용: getLineMarkerIcon(fileName, randomColor)
-                    // 리스트용: getLineMarkerIcon(fileName, randomColor, true)
-                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 1);
+                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 1, 0);
                     iconElement = document.createElement('img');
                     iconElement.src = iconUrl;
-                    iconElement.style.width = '12px';
-                    iconElement.style.height = '12px';
-                    //iconElement.style.position = 'relative';
-                    //iconElement.style.margin = '0 4 16 0px';
+                    iconElement.style.width = '24px';
+                    iconElement.style.height = '24px';
                 } else if (type === "Polygon" || type === "MultiPolygon") {
-                    // 지도용: getPolygonMarkerIcon(fileName, randomColor)
-                    // 리스트용: getPolygonMarkerIcon(fileName, randomColor, true)
-                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 2);
+                    // 폴리곤은 면 색상/투명도와 선 색상/투명도를 모두 전달
+                    const iconUrl = getMarkerIcon(fileName, randomColor, true, 2, 0, strokeColor, 0);
                     iconElement = document.createElement('img');
                     iconElement.src = iconUrl;
-                    iconElement.style.width = '16px';
-                    iconElement.style.height = '16px';
-                    //iconElement.style.position = 'relative';
-                    //iconElement.style.margin = '0 4 16 0px';                    
+                    iconElement.style.width = '24px';
+                    iconElement.style.height = '24px';
                 }
 
                 moveToLayer(layer)
 
+                // 원본 레이어 이름 저장 (레이어 제거용)
+                const originalLayerName = fileName;
+
                 // 레이어 이름
                 const label = document.createElement('span');
                 label.textContent = fileName;
-                label.title = fileName; // 마우스 오버 시 전체 이름 표시
-                label.style.cursor = 'pointer'; // 클릭 가능함을 표시
+                label.title = fileName;
+                label.style.cursor = 'pointer';
+
+                // 클릭 이벤트 - 레이어로 이동
                 label.addEventListener('click', () => {
-                    moveToLayer(layer)
+                    moveToLayer(layer);
                 });
 
                 // x 제거 버튼
                 const removeBtn = document.createElement('button');
-                removeBtn.textContent = "X";
-                removeBtn.addEventListener('click', () => {
-                    Module.XDEMapRemoveLayer(label.textContent);
-                    layerItem.remove();
+                removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+                removeBtn.title = `${originalLayerName} 레이어를 삭제합니다`;
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    Module.XDEMapRemoveLayer(originalLayerName);
+                    dropSqliteTable(fileName);
+                    layerContainer.remove();
                     mouseOverInterface(false);
                 });
 
-                // 조립
-                layerItem.appendChild(checkbox);
-                if (iconElement) {
-                    layerItem.appendChild(iconElement);
+                // RGB를 hex로 변환하는 함수
+                function rgbaToHex(rgba) {
+                    const rgb = colorStringToRGB(rgba);
+                    return '#' + rgb.map(x => x.toString(16).padStart(2, '0')).join('');
                 }
-                layerItem.appendChild(label);
-                layerItem.appendChild(removeBtn);
+
+                // hex를 rgba로 변환하는 함수
+                function hexToRgba(hex) {
+                    const r = parseInt(hex.substr(1, 2), 16);
+                    const g = parseInt(hex.substr(3, 2), 16);
+                    const b = parseInt(hex.substr(5, 2), 16);
+                    return `rgba(${r}, ${g}, ${b}, 1.0)`;
+                }
+
+                // 색상 피커 및 컨트롤 변수들
+                let pointColorPicker, lineColorPicker, lineWidthInput, fillColorPicker, strokeColorPicker, iconSelect;
+                let pointColorCode, lineColorCode, fillColorCode, strokeColorCode;
+
+                // 헬퍼 함수: 레이어 재생성
+                function recreateLayer(layerType, createFunction) {
+                    console.log('레이어 재생성:', originalLayerName);
+                    Module.XDEMapRemoveLayer(originalLayerName);
+                    const layerList = new Module.JSLayerList(true);
+                    layer = layerList.createLayer(originalLayerName, layerType);
+                    layer.setVisible(checkbox.checked);
+                    createFunction();
+                    layer.rebuildObjectLayer();
+                }
+
+                // 헬퍼 함수: 아이콘 업데이트
+                function updateIcon(iconType, color, transparency = 0, strokeColor = null, strokeTransparency = 0) {
+                    console.log('아이콘 업데이트:', iconType, color);
+                    if (iconElement) {
+                        const iconUrl = getMarkerIcon(originalLayerName, color, true, iconType, transparency, strokeColor, strokeTransparency);
+                        iconElement.src = iconUrl;
+                        console.log('아이콘 URL 업데이트 완료');
+                    }
+                }
+
+                // 점 타입 - 아이콘 선택 및 색상 피커
+                let currentIconType = 'circle';
+                let currentPointSize = 10;
+                let pointSizeInput;
+                if (type === "Point") {
+                    // 색상 피커 생성 (원본 색상 사용)
+                    pointColorPicker = document.createElement('input');
+                    pointColorPicker.type = 'color';
+                    pointColorPicker.value = rgbaToHex(randomColor);
+                    pointColorPicker.className = 'color-picker';
+                    pointColorPicker.title = '점 색상';
+
+                    // 점 색상 hex 코드 표시
+                    pointColorCode = document.createElement('span');
+                    pointColorCode.className = 'color-code';
+                    pointColorCode.textContent = pointColorPicker.value.toUpperCase();
+
+                    // 아이콘 선택 드롭다운
+                    iconSelect = document.createElement('select');
+                    iconSelect.className = 'icon-select';
+                    iconSelect.title = 'POI 아이콘 선택';
+                    iconSelect.innerHTML = `
+                        <option value="circle">● 원형</option>
+                        <option value="pin">📍 핀</option>
+                        <option value="star">⭐ 별</option>
+                        <option value="home">🏠 집</option>
+                        <option value="flag">🚩 깃발</option>
+                    `;
+
+                    // 점 크기 슬라이더
+                    pointSizeInput = document.createElement('input');
+                    pointSizeInput.type = 'range';
+                    pointSizeInput.min = '1';
+                    pointSizeInput.max = '50';
+                    pointSizeInput.value = currentPointSize;
+                    pointSizeInput.className = 'size-slider';
+                    pointSizeInput.title = '점 크기';
+
+                    // 색상 피커 이벤트 핸들러
+                    pointColorPicker.addEventListener('change', (e) => {
+                        const newColor = hexToRgba(e.target.value);
+                        pointColorCode.textContent = e.target.value.toUpperCase();
+
+                        recreateLayer(Module.ELT_3DPOINT, () => {
+                            if (currentIconType === 'circle') {
+                                createPointObjects(layer, data.features, 0.0, newColor, null, currentPointSize);
+                            } else {
+                                const iconUrl = createColoredIconUrl(currentIconType, e.target.value);
+                                createPointObjects(layer, data.features, 0.0, newColor, iconUrl, currentPointSize);
+                            }
+                        });
+
+                        // 레이어 리스트 아이콘도 업데이트
+                        if (iconElement) {
+                            iconElement.src = currentIconType === 'circle'
+                                ? getMarkerIcon(fileName, newColor, true, 0)
+                                : createColoredIconUrl(currentIconType, e.target.value);
+                        }
+                    });
+
+                    // 아이콘 선택 이벤트 핸들러
+                    iconSelect.addEventListener('change', (e) => {
+                        currentIconType = e.target.value;
+                        console.log('아이콘 타입 변경:', currentIconType);
+
+                        const currentColor = hexToRgba(pointColorPicker.value);
+
+                        recreateLayer(Module.ELT_3DPOINT, () => {
+                            if (currentIconType === 'circle') {
+                                console.log('기본 원형 아이콘 사용');
+                                createPointObjects(layer, data.features, 0.0, currentColor, null, currentPointSize);
+                            } else {
+                                const iconUrl = createColoredIconUrl(currentIconType, pointColorPicker.value);
+                                console.log('SVG 아이콘 URL:', iconUrl);
+                                createPointObjects(layer, data.features, 0.0, currentColor, iconUrl, currentPointSize);
+                            }
+                        });
+
+                        // 레이어 리스트 아이콘도 업데이트
+                        if (iconElement) {
+                            iconElement.src = currentIconType === 'circle'
+                                ? getMarkerIcon(fileName, currentColor, true, 0)
+                                : createColoredIconUrl(currentIconType, pointColorPicker.value);
+                        }
+                    });
+
+                    // 점 크기 슬라이더 이벤트 핸들러
+                    pointSizeInput.addEventListener('input', (e) => {
+                        currentPointSize = parseFloat(e.target.value) || 10;
+                        console.log('점 크기 변경:', currentPointSize);
+
+                        const currentColor = hexToRgba(pointColorPicker.value);
+
+                        recreateLayer(Module.ELT_3DPOINT, () => {
+                            if (currentIconType === 'circle') {
+                                createPointObjects(layer, data.features, 0.0, currentColor, null, currentPointSize);
+                            } else {
+                                const iconUrl = createColoredIconUrl(currentIconType, pointColorPicker.value);
+                                createPointObjects(layer, data.features, 0.0, currentColor, iconUrl, currentPointSize);
+                            }
+                        });
+                    });
+                }
+
+                // 라인 타입 색상 피커 및 두께 컨트롤
+                let currentLineWidth = 3.0;
+                let currentLineTransparency = 0;
+                let lineTransparencyInput;
+                if (type === "LineString" || type === "MultiLineString") {
+                    lineColorPicker = document.createElement('input');
+                    lineColorPicker.type = 'color';
+                    lineColorPicker.value = rgbaToHex(randomColor);
+                    lineColorPicker.className = 'color-picker';
+                    lineColorPicker.title = '선 색상';
+
+                    // 라인 색상 hex 코드 표시
+                    lineColorCode = document.createElement('span');
+                    lineColorCode.className = 'color-code';
+                    lineColorCode.textContent = lineColorPicker.value.toUpperCase();
+
+                    lineColorPicker.addEventListener('change', (e) => {
+                        const newColor = hexToRgba(e.target.value);
+                        lineColorCode.textContent = e.target.value.toUpperCase();
+
+                        recreateLayer(Module.ELT_3DLINE, () => {
+                            createLineObjects(layer, data.features, 0.0, newColor, currentLineWidth, currentLineTransparency);
+                        });
+
+                        updateIcon(1, newColor, currentLineTransparency);
+                    });
+
+                    // 선 두께 입력 (1-20 범위)
+                    lineWidthInput = document.createElement('input');
+                    lineWidthInput.type = 'number';
+                    lineWidthInput.min = '1';
+                    lineWidthInput.max = '20';
+                    lineWidthInput.step = '0.5';
+                    lineWidthInput.value = currentLineWidth;
+                    lineWidthInput.style.width = '50px';
+                    lineWidthInput.style.backgroundColor = '#3c3c3c';
+                    lineWidthInput.style.color = '#cccccc';
+                    lineWidthInput.style.border = '1px solid #555';
+                    lineWidthInput.style.borderRadius = '3px';
+                    lineWidthInput.style.padding = '2px 4px';
+                    lineWidthInput.style.fontSize = '11px';
+                    lineWidthInput.title = '선 두께';
+                    lineWidthInput.addEventListener('change', (e) => {
+                        currentLineWidth = parseFloat(e.target.value) || 3.0;
+
+                        recreateLayer(Module.ELT_3DLINE, () => {
+                            createLineObjects(layer, data.features, 0.0, hexToRgba(lineColorPicker.value), currentLineWidth, currentLineTransparency);
+                        });
+                    });
+
+                    // 투명도 슬라이더 (0-100% 범위)
+                    lineTransparencyInput = document.createElement('input');
+                    lineTransparencyInput.type = 'range';
+                    lineTransparencyInput.min = '0';
+                    lineTransparencyInput.max = '100';
+                    lineTransparencyInput.step = '1';
+                    lineTransparencyInput.value = currentLineTransparency;
+                    lineTransparencyInput.style.width = '100px';
+                    lineTransparencyInput.title = '투명도: ' + currentLineTransparency + '%';
+                    lineTransparencyInput.addEventListener('input', (e) => {
+                        currentLineTransparency = parseInt(e.target.value);
+                        e.target.title = '투명도: ' + currentLineTransparency + '%';
+
+                        const currentColor = hexToRgba(lineColorPicker.value);
+
+                        recreateLayer(Module.ELT_3DLINE, () => {
+                            createLineObjects(layer, data.features, 0.0, currentColor, currentLineWidth, currentLineTransparency);
+                        });
+
+                        updateIcon(1, currentColor, currentLineTransparency);
+                    });
+                }
+
+                // 폴리곤 타입 색상 피커
+                let currentFillTransparency = 0;
+                let currentStrokeTransparency = 0;
+                let fillTransparencyInput, strokeTransparencyInput;
+                if (type === "Polygon" || type === "MultiPolygon") {
+                    // 면 색상 피커 (원본 색상 사용)
+                    console.log('폴리곤 색상 초기화 - randomColor:', randomColor);
+                    console.log('폴리곤 색상 초기화 - strokeColor:', strokeColor);
+
+                    fillColorPicker = document.createElement('input');
+                    fillColorPicker.type = 'color';
+                    const fillHex = rgbaToHex(randomColor);
+                    console.log('면 색상 hex:', fillHex);
+                    fillColorPicker.value = fillHex;
+                    fillColorPicker.className = 'color-picker';
+                    fillColorPicker.title = '면 색상';
+
+                    // 면 색상 hex 코드 표시
+                    fillColorCode = document.createElement('span');
+                    fillColorCode.className = 'color-code';
+                    fillColorCode.textContent = fillColorPicker.value.toUpperCase();
+
+                    fillColorPicker.addEventListener('change', (e) => {
+                        console.log('면 색상 변경:', e.target.value);
+                        const newFillColor = hexToRgba(e.target.value);
+                        const currentStrokeColor = strokeColorPicker ? hexToRgba(strokeColorPicker.value) : strokeColor;
+                        fillColorCode.textContent = e.target.value.toUpperCase();
+                        console.log('newFillColor:', newFillColor, 'currentStrokeColor:', currentStrokeColor);
+
+                        recreateLayer(Module.ELT_POLYHEDRON, () => {
+                            createPolygonObjects(layer, data.features, 0.0, newFillColor, currentStrokeColor, currentFillTransparency, currentStrokeTransparency);
+                        });
+
+                        updateIcon(2, newFillColor, currentFillTransparency, currentStrokeColor, currentStrokeTransparency);
+                    });
+
+                    // 면 투명도 슬라이더 (0-100% 범위)
+                    fillTransparencyInput = document.createElement('input');
+                    fillTransparencyInput.type = 'range';
+                    fillTransparencyInput.min = '0';
+                    fillTransparencyInput.max = '100';
+                    fillTransparencyInput.step = '1';
+                    fillTransparencyInput.value = currentFillTransparency;
+                    fillTransparencyInput.style.width = '100px';
+                    fillTransparencyInput.title = '면 투명도: ' + currentFillTransparency + '%';
+                    fillTransparencyInput.addEventListener('input', (e) => {
+                        currentFillTransparency = parseInt(e.target.value);
+                        e.target.title = '면 투명도: ' + currentFillTransparency + '%';
+
+                        const currentFillColor = fillColorPicker ? hexToRgba(fillColorPicker.value) : randomColor;
+                        const currentStrokeColor = strokeColorPicker ? hexToRgba(strokeColorPicker.value) : strokeColor;
+
+                        recreateLayer(Module.ELT_POLYHEDRON, () => {
+                            createPolygonObjects(layer, data.features, 0.0, currentFillColor, currentStrokeColor, currentFillTransparency, currentStrokeTransparency);
+                        });
+
+                        updateIcon(2, currentFillColor, currentFillTransparency, currentStrokeColor, currentStrokeTransparency);
+                    });
+
+                    // 선 색상 피커 (원본 색상 사용)
+                    strokeColorPicker = document.createElement('input');
+                    strokeColorPicker.type = 'color';
+                    const strokeHex = rgbaToHex(strokeColor);
+                    console.log('선 색상 hex:', strokeHex);
+                    strokeColorPicker.value = strokeHex;
+                    strokeColorPicker.className = 'color-picker';
+                    strokeColorPicker.title = '선 색상';
+
+                    // 선 색상 hex 코드 표시
+                    strokeColorCode = document.createElement('span');
+                    strokeColorCode.className = 'color-code';
+                    strokeColorCode.textContent = strokeColorPicker.value.toUpperCase();
+
+                    strokeColorPicker.addEventListener('change', (e) => {
+                        console.log('선 색상 변경:', e.target.value);
+                        const newStrokeColor = hexToRgba(e.target.value);
+                        const currentFillColor = fillColorPicker ? hexToRgba(fillColorPicker.value) : randomColor;
+                        strokeColorCode.textContent = e.target.value.toUpperCase();
+                        console.log('currentFillColor:', currentFillColor, 'newStrokeColor:', newStrokeColor);
+
+                        recreateLayer(Module.ELT_POLYHEDRON, () => {
+                            createPolygonObjects(layer, data.features, 0.0, currentFillColor, newStrokeColor, currentFillTransparency, currentStrokeTransparency);
+                        });
+
+                        updateIcon(2, currentFillColor, currentFillTransparency, newStrokeColor, currentStrokeTransparency);
+                    });
+
+                    // 선 투명도 슬라이더 (0-100% 범위)
+                    strokeTransparencyInput = document.createElement('input');
+                    strokeTransparencyInput.type = 'range';
+                    strokeTransparencyInput.min = '0';
+                    strokeTransparencyInput.max = '100';
+                    strokeTransparencyInput.step = '1';
+                    strokeTransparencyInput.value = currentStrokeTransparency;
+                    strokeTransparencyInput.style.width = '100px';
+                    strokeTransparencyInput.title = '선 투명도: ' + currentStrokeTransparency + '%';
+                    strokeTransparencyInput.addEventListener('input', (e) => {
+                        currentStrokeTransparency = parseInt(e.target.value);
+                        e.target.title = '선 투명도: ' + currentStrokeTransparency + '%';
+
+                        const currentFillColor = fillColorPicker ? hexToRgba(fillColorPicker.value) : randomColor;
+                        const currentStrokeColor = strokeColorPicker ? hexToRgba(strokeColorPicker.value) : strokeColor;
+
+                        recreateLayer(Module.ELT_POLYHEDRON, () => {
+                            createPolygonObjects(layer, data.features, 0.0, currentFillColor, currentStrokeColor, currentFillTransparency, currentStrokeTransparency);
+                        });
+
+                        updateIcon(2, currentFillColor, currentFillTransparency, currentStrokeColor, currentStrokeTransparency);
+                    });
+                }
+
+                // 확장 아이콘 생성
+                // 조립 - 헤더 부분 (기본 정보)
+                layerHeader.appendChild(checkbox);
+                if (iconElement) {
+                    layerHeader.appendChild(iconElement);
+                }
+                layerHeader.appendChild(label);
+                layerHeader.appendChild(removeBtn);
+
+
+                // 속성 패널 헤더 (닫기 버튼 포함)
+                const propertiesHeader = document.createElement('div');
+                propertiesHeader.className = 'properties-header';
+                const propertiesTitle = document.createElement('span');
+                propertiesTitle.textContent = '속성';
+                const closePropertiesBtn = document.createElement('button');
+                closePropertiesBtn.className = 'close-properties-btn';
+                closePropertiesBtn.textContent = '×';
+                closePropertiesBtn.title = '닫기';
+                closePropertiesBtn.addEventListener('click', () => {
+                    propertiesContainer.style.display = 'none';
+                });
+                propertiesHeader.appendChild(propertiesTitle);
+                propertiesHeader.appendChild(closePropertiesBtn);
+                propertiesContainer.appendChild(propertiesHeader);
+
+                // 타입별 속성 컨트롤 추가 (속성 패널용)
+                if (type === "Point") {
+                    // 점 색상
+                    const colorRow = document.createElement('div');
+                    colorRow.className = 'property-row';
+                    const colorLabel = document.createElement('span');
+                    colorLabel.className = 'property-label';
+                    colorLabel.textContent = '점 색상';
+                    colorRow.appendChild(colorLabel);
+                    colorRow.appendChild(pointColorPicker);
+                    colorRow.appendChild(pointColorCode);
+                    propertiesContainer.appendChild(colorRow);
+
+                    // 점 크기
+                    if (pointSizeInput) {
+                        const sizeRow = document.createElement('div');
+                        sizeRow.className = 'property-row';
+                        const sizeLabel = document.createElement('span');
+                        sizeLabel.className = 'property-label';
+                        sizeLabel.textContent = '점 크기';
+                        sizeRow.appendChild(sizeLabel);
+                        sizeRow.appendChild(pointSizeInput);
+                        propertiesContainer.appendChild(sizeRow);
+                    }
+
+                    // 아이콘 종류
+                    if (iconSelect) {
+                        const iconRow = document.createElement('div');
+                        iconRow.className = 'property-row';
+                        const iconLabel = document.createElement('span');
+                        iconLabel.className = 'property-label';
+                        iconLabel.textContent = '아이콘 종류';
+                        iconRow.appendChild(iconLabel);
+                        iconRow.appendChild(iconSelect);
+                        propertiesContainer.appendChild(iconRow);
+                    }
+                } else if (type === "LineString" || type === "MultiLineString") {
+                    // 선 색상
+                    const colorRow = document.createElement('div');
+                    colorRow.className = 'property-row';
+                    const colorLabel = document.createElement('span');
+                    colorLabel.className = 'property-label';
+                    colorLabel.textContent = '선 색상';
+                    colorRow.appendChild(colorLabel);
+                    colorRow.appendChild(lineColorPicker);
+                    colorRow.appendChild(lineColorCode);
+                    propertiesContainer.appendChild(colorRow);
+
+                    // 선 두께
+                    if (lineWidthInput) {
+                        const widthRow = document.createElement('div');
+                        widthRow.className = 'property-row';
+                        const widthLabel = document.createElement('span');
+                        widthLabel.className = 'property-label';
+                        widthLabel.textContent = '선 두께';
+                        widthRow.appendChild(widthLabel);
+                        widthRow.appendChild(lineWidthInput);
+                        propertiesContainer.appendChild(widthRow);
+                    }
+
+                    // 선 투명도
+                    if (lineTransparencyInput) {
+                        const transparencyRow = document.createElement('div');
+                        transparencyRow.className = 'property-row';
+                        const transparencyLabel = document.createElement('span');
+                        transparencyLabel.className = 'property-label';
+                        transparencyLabel.textContent = '선 투명도';
+                        transparencyRow.appendChild(transparencyLabel);
+                        transparencyRow.appendChild(lineTransparencyInput);
+                        propertiesContainer.appendChild(transparencyRow);
+                    }
+                } else if (type === "Polygon" || type === "MultiPolygon") {
+                    const fillRow = document.createElement('div');
+                    fillRow.className = 'property-row';
+                    const fillLabel = document.createElement('span');
+                    fillLabel.className = 'property-label';
+                    fillLabel.textContent = '면 색상';
+                    fillRow.appendChild(fillLabel);
+                    fillRow.appendChild(fillColorPicker);
+                    fillRow.appendChild(fillColorCode);
+                    propertiesContainer.appendChild(fillRow);
+
+                    if (fillTransparencyInput) {
+                        const fillTransparencyRow = document.createElement('div');
+                        fillTransparencyRow.className = 'property-row';
+                        const fillTransparencyLabel = document.createElement('span');
+                        fillTransparencyLabel.className = 'property-label';
+                        fillTransparencyLabel.textContent = '면 투명도';
+                        fillTransparencyRow.appendChild(fillTransparencyLabel);
+                        fillTransparencyRow.appendChild(fillTransparencyInput);
+                        propertiesContainer.appendChild(fillTransparencyRow);
+                    }
+
+                    // 선 색상
+                    const strokeRow = document.createElement('div');
+                    strokeRow.className = 'property-row';
+                    const strokeLabel = document.createElement('span');
+                    strokeLabel.className = 'property-label';
+                    strokeLabel.textContent = '선 색상';
+                    strokeRow.appendChild(strokeLabel);
+                    strokeRow.appendChild(strokeColorPicker);
+                    strokeRow.appendChild(strokeColorCode);
+                    propertiesContainer.appendChild(strokeRow);
+
+                    // 선 두께 (추후 구현 가능)
+                    // TODO: 선 두께 슬라이더 추가
+
+                    // 선 투명도
+                    if (strokeTransparencyInput) {
+                        const strokeTransparencyRow = document.createElement('div');
+                        strokeTransparencyRow.className = 'property-row';
+                        const strokeTransparencyLabel = document.createElement('span');
+                        strokeTransparencyLabel.className = 'property-label';
+                        strokeTransparencyLabel.textContent = '선 투명도';
+                        strokeTransparencyRow.appendChild(strokeTransparencyLabel);
+                        strokeTransparencyRow.appendChild(strokeTransparencyInput);
+                        propertiesContainer.appendChild(strokeTransparencyRow);
+                    }
+                }
+
+                // 레이어 삭제 버튼 (모든 타입 공통)
+                const deleteRow = document.createElement('div');
+                deleteRow.className = 'property-row';
+                deleteRow.style.marginTop = '12px';
+                deleteRow.style.paddingTop = '12px';
+                deleteRow.style.borderTop = '1px solid #3c3c3c';
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '레이어 삭제';
+                deleteButton.style.width = '100%';
+                deleteButton.style.backgroundColor = '#e74c3c';
+                deleteButton.style.color = '#ffffff';
+                deleteButton.style.border = 'none';
+                deleteButton.style.borderRadius = '3px';
+                deleteButton.style.padding = '6px 12px';
+                deleteButton.style.fontSize = '12px';
+                deleteButton.style.cursor = 'pointer';
+                deleteButton.style.transition = 'background-color 0.2s';
+
+                deleteButton.addEventListener('mouseenter', () => {
+                    deleteButton.style.backgroundColor = '#c0392b';
+                });
+                deleteButton.addEventListener('mouseleave', () => {
+                    deleteButton.style.backgroundColor = '#e74c3c';
+                });
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`"${fileName}" 레이어를 삭제하시겠습니까?`)) {
+                        Module.XDEMapRemoveLayer(originalLayerName);
+                        dropSqliteTable(fileName);
+                        layerContainer.remove();
+                        mouseOverInterface(false);
+                    }
+                });
+
+                deleteRow.appendChild(deleteButton);
+                propertiesContainer.appendChild(deleteRow);
+
+                // 속성 패널 초기 상태는 숨김
+                propertiesContainer.style.display = 'none';
+                propertiesContainer.style.paddingLeft = '30px';
+                propertiesContainer.style.paddingRight = '6px';
+                propertiesContainer.style.paddingTop = '6px';
+                propertiesContainer.style.paddingBottom = '6px';
+
+                // 컨테이너 조립
+                layerContainer.appendChild(layerHeader);
+                layerContainer.appendChild(propertiesContainer);
+
+                // 컨텍스트 메뉴 추가
+                layerContainer.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // 타입별 현재 색상 정보를 style 객체에 포함
+                    // 색상 피커가 있으면 피커 값 사용, 없으면 초기 색상 사용
+                    const style = {};
+                    switch (type) {
+                        case "Point":
+                            style.pointColor = pointColorPicker ? pointColorPicker.value : rgbaToHex(randomColor);
+                            style.iconType = currentIconType || 'circle';
+                            style.pointSize = currentPointSize || 10;
+                            break;
+                        case "LineString":
+                        case "MultiLineString":
+                            style.lineColor = lineColorPicker ? lineColorPicker.value : rgbaToHex(randomColor);
+                            style.lineWidth = currentLineWidth || 3.0;
+                            break;
+                        case "Polygon":
+                        case "MultiPolygon":
+                            style.fillColor = fillColorPicker ? fillColorPicker.value : rgbaToHex(randomColor);
+                            style.lineColor = strokeColorPicker ? strokeColorPicker.value : rgbaToHex(strokeColor);
+                            style.fillOpacity = currentFillTransparency;
+                            style.strokeOpacity = currentStrokeTransparency;
+                            break;
+                    }
+
+                    // updateStyle 함수 정의 - 컨텍스트 메뉴에서 색상 변경 시 호출
+                    const updateStyle = () => {
+                        console.log('컨텍스트 메뉴에서 스타일 업데이트:', type);
+
+                        switch (type) {
+                            case "Point":
+                                const newPointColor = hexToRgba(style.pointColor);
+                                const newIconType = style.iconType || 'circle';
+                                const newPointSize = parseFloat(style.pointSize) || currentPointSize;
+                                console.log('새 포인트 색상:', newPointColor, '아이콘 타입:', newIconType, '점 크기:', newPointSize);
+
+                                // currentIconType, currentPointSize 업데이트
+                                currentIconType = newIconType;
+                                currentPointSize = newPointSize;
+
+                                recreateLayer(Module.ELT_3DPOINT, () => {
+                                    if (newIconType === 'circle') {
+                                        createPointObjects(layer, data.features, 0.0, newPointColor, null, currentPointSize);
+                                    } else {
+                                        const iconUrl = createColoredIconUrl(newIconType, style.pointColor);
+                                        createPointObjects(layer, data.features, 0.0, newPointColor, iconUrl, currentPointSize);
+                                    }
+                                });
+
+                                // 레이어 리스트 아이콘 업데이트
+                                if (iconElement) {
+                                    iconElement.src = newIconType === 'circle'
+                                        ? getMarkerIcon(fileName, newPointColor, true, 0)
+                                        : createColoredIconUrl(newIconType, style.pointColor);
+                                }
+
+                                // 확장 메뉴 색상 피커와 아이콘 셀렉트, 점 크기 동기화
+                                if (pointColorPicker) {
+                                    pointColorPicker.value = style.pointColor;
+                                    if (pointColorCode) {
+                                        pointColorCode.textContent = style.pointColor.toUpperCase();
+                                    }
+                                }
+                                if (iconSelect) {
+                                    iconSelect.value = newIconType;
+                                }
+                                if (pointSizeInput) {
+                                    pointSizeInput.value = currentPointSize;
+                                }
+                                break;
+
+                            case "LineString":
+                            case "MultiLineString":
+                                const newLineColor = hexToRgba(style.lineColor);
+                                const newLineWidth = parseFloat(style.lineWidth) || currentLineWidth;
+                                console.log('새 라인 색상:', newLineColor, '선 두께:', newLineWidth);
+
+                                // currentLineWidth 업데이트
+                                currentLineWidth = newLineWidth;
+
+                                recreateLayer(Module.ELT_3DLINE, () => {
+                                    createLineObjects(layer, data.features, 0.0, newLineColor, currentLineWidth, currentLineTransparency);
+                                });
+                                updateIcon(1, newLineColor, currentLineTransparency);
+
+                                // 확장 메뉴 색상 피커 및 두께 동기화
+                                if (lineColorPicker) {
+                                    lineColorPicker.value = style.lineColor;
+                                }
+                                if (lineWidthInput) {
+                                    lineWidthInput.value = currentLineWidth;
+                                }
+                                break;
+
+                            case "Polygon":
+                            case "MultiPolygon":
+                                const newFillColor = hexToRgba(style.fillColor);
+                                const newStrokeColor = hexToRgba(style.lineColor);
+                                const newFillOpacity = parseFloat(style.fillOpacity) || 0;
+                                const newStrokeOpacity = parseFloat(style.strokeOpacity) || 0;
+                                console.log('새 면 색상:', newFillColor, '면 투명도:', newFillOpacity);
+                                console.log('새 선 색상:', newStrokeColor, '선 투명도:', newStrokeOpacity);
+
+                                // 투명도 변수 업데이트
+                                currentFillTransparency = newFillOpacity;
+                                currentStrokeTransparency = newStrokeOpacity;
+
+                                recreateLayer(Module.ELT_POLYHEDRON, () => {
+                                    createPolygonObjects(layer, data.features, 0.0, newFillColor, newStrokeColor, newFillOpacity, newStrokeOpacity);
+                                });
+                                updateIcon(2, newFillColor, newFillOpacity, newStrokeColor, newStrokeOpacity);
+
+                                // 확장 메뉴 색상 피커 및 투명도 슬라이더도 동기화
+                                if (fillColorPicker) {
+                                    fillColorPicker.value = style.fillColor;
+                                }
+                                if (strokeColorPicker) {
+                                    strokeColorPicker.value = style.lineColor;
+                                }
+                                if (fillTransparencyInput) {
+                                    fillTransparencyInput.value = newFillOpacity;
+                                }
+                                if (strokeTransparencyInput) {
+                                    strokeTransparencyInput.value = newStrokeOpacity;
+                                }
+                                break;
+                        }
+                    };
+
+                    const layerData = {
+                        layerItem: layerContainer,
+                        layer: layer,
+                        label: label,
+                        removeBtn: removeBtn,
+                        propertiesContent: propertiesContainer,
+                        originalLayerName: originalLayerName,
+                        fileName: fileName,
+                        style: style,
+                        updateStyle: updateStyle
+                    };
+
+                    // 메뉴 동적 생성
+                    buildContextMenu(layerData);
+
+                    // 메뉴 표시 (마우스 위치에 자동 조정)
+                    showContextMenu(e, layerContainer);
+                });
 
                 // 드래그 앤 드롭 가능하게 설정
-                makeDraggable(layerItem, layer, layerList);
+                makeDraggable(layerContainer, layer, layerList);
 
-                document.getElementById('interface').appendChild(layerItem);
+                document.getElementById('interface').appendChild(layerContainer);
                 index++;
-            }).catch(err => {
-                alert("GeoJSON 파일을 읽을 수 없습니다: " + err);
-            });
         }
         function moveToLayer(layer) {
-            let obj = layer.indexAtObject(0);
-            console.log(obj.position.longitude, obj.position.latitude, obj.position.altitude);
-            let cenLon = obj.position.longitude;
-            let cenLat = obj.position.latitude;
-            let cenAlt = obj.position.altitude;
-            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, cenAlt + 1000), 89.9, 0, 0);
-
+            try {
+                let obj = layer.indexAtObject(0);
+                if (!obj || !obj.position) {
+                    console.warn('레이어에 객체가 없거나 위치 정보가 없습니다.');
+                    return;
+                }
+                console.log('레이어로 이동:', obj.position.longitude, obj.position.latitude, obj.position.altitude);
+                let cenLon = obj.position.longitude;
+                let cenLat = obj.position.latitude;
+                let cenAlt = obj.position.altitude;
+                Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, cenAlt + 1000), 89.9, 0, 0);
+            } catch (e) {
+                console.error('레이어 이동 오류:', e.message);
+            }
         }
         // ECEF -> Geodetic (lat, lon, h), WGS84
         function ecefToLla(x, y, z) {
@@ -797,27 +3587,27 @@
                         let layer = null;
                         let layerList = new Module.JSLayerList(false);
                         let type = null;
-                        if (layerType == "ETLT_PNG_IMAGE") {                            
+                        if (layerType == "ETLT_PNG_IMAGE") {
                             type = Module.TILE_LAYER_TYPE_IMAGE;
-                            alt = 5000;                            
+                            alt = 5000;
                         }
-                        if(layerType == "ETLT_VECTOR_PIPE") { 
-                            type = Module.TILE_LAYER_TYPE_VECTOR_PIPE;                            
+                        if (layerType == "ETLT_VECTOR_PIPE") {
+                            type = Module.TILE_LAYER_TYPE_VECTOR_PIPE;
                             alt = 500;
                         }
-                        if(layerType == "ETLT_REAL3D") {
-                            type = Module.TILE_LAYER_TYPE_REAL3D;                                                        
+                        if (layerType == "ETLT_REAL3D") {
+                            type = Module.TILE_LAYER_TYPE_REAL3D;
                         }
-                        if(layerType == "ETLT_3DPOINT"){
+                        if (layerType == "ETLT_3DPOINT") {
                             type = Module.TILE_LAYER_TYPE_POI;
                             // 아래 좌표는 테스트용입니다. 제주도 
                             cenLon = 126.852;
-                            cenLat = 33.523;                            
+                            cenLat = 33.523;
                             alt = 500;
                         }
-                        Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, type, minLv, maxLv);                            
-                        Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);                            
-                        layer = layerList.nameAtLayer(layerName);                        
+                        Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, type, minLv, maxLv);
+                        Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);
+                        layer = layerList.nameAtLayer(layerName);
 
                         if (layer != null) {
 
@@ -844,7 +3634,8 @@
 
                             // x 제거 버튼
                             const removeBtn = document.createElement('button');
-                            removeBtn.textContent = 'X';
+                            removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+                            removeBtn.title = `${label.textContent} 레이어를 삭제합니다`;
                             removeBtn.addEventListener('click', () => {
                                 Module.XDEMapRemoveLayer(label.textContent);
                                 layerItem.remove();
@@ -857,7 +3648,7 @@
                             // 조립
                             layerItem.appendChild(checkbox);
                             layerItem.appendChild(label);
-                            
+
                             if (layerType == "ETLT_VECTOR_PIPE") {
                                 const transparencyBtn = document.createElement('button');
                                 transparencyBtn.textContent = 'T';
@@ -870,6 +3661,21 @@
                             }
 
                             layerItem.appendChild(removeBtn);
+
+                            // 컨텍스트 메뉴 추가
+                            layerItem.addEventListener('contextmenu', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                window.currentContextLayer = {
+                                    layerItem: layerItem,
+                                    layer: layer,
+                                    label: label,
+                                    removeBtn: removeBtn
+                                };
+
+                                showContextMenu(e, layerItem);
+                            });
 
                             // 드래그 앤 드롭 가능하게 설정
                             makeDraggable(layerItem, layer, layerList);
@@ -892,6 +3698,7 @@
 
     </script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/sql-wasm.js"></script>
 </body>
 
 </html>
