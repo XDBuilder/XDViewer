@@ -17,6 +17,243 @@
      transition: border-color 0.3s;
  }
 
+/* 지도 컨트롤 버튼 */
+#map-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 900;
+}
+
+.map-control-btn {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(37, 37, 38, 0.85);
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    color: #cccccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.map-control-btn:hover {
+    background-color: rgba(60, 60, 60, 0.95);
+    color: #ffffff;
+    border-color: #007acc;
+}
+
+.map-control-btn:active {
+    background-color: #007acc;
+}
+
+/* 플로팅 패널 (지도 위 분석 패널) */
+.floating-panel {
+    position: absolute;
+    top: 12px;
+    right: 56px;
+    width: 300px;
+    background-color: rgba(30, 30, 30, 0.95);
+    border: 1px solid #3c3c3c;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    z-index: 950;
+    font-size: 12px;
+    color: #cccccc;
+}
+
+.floating-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #252526;
+    border-bottom: 1px solid #3c3c3c;
+    border-radius: 6px 6px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.floating-panel-close {
+    background: none;
+    border: none;
+    color: #858585;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    border-radius: 3px;
+}
+
+.floating-panel-close:hover {
+    background-color: #3c3c3c;
+    color: #ffffff;
+}
+
+.floating-panel-body {
+    padding: 10px 12px;
+}
+
+.fp-mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 10px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.fp-mode-tab {
+    flex: 1;
+    padding: 5px 0;
+    border: none;
+    background: #3c3c3c;
+    color: #858585;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.fp-mode-tab:not(:last-child) {
+    border-right: 1px solid #555;
+}
+
+.fp-mode-tab.active {
+    background: #007acc;
+    color: #ffffff;
+}
+
+.fp-mode-tab:hover:not(.active) {
+    background: #4e4e4e;
+    color: #cccccc;
+}
+
+.fp-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.fp-label {
+    font-size: 11px;
+    color: #858585;
+    min-width: 65px;
+    flex-shrink: 0;
+}
+
+.fp-inputs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.fp-select {
+    background: #3c3c3c;
+    color: #cccccc;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 3px 4px;
+    font-size: 11px;
+    outline: none;
+    min-width: 50px;
+}
+
+.fp-select-wide {
+    min-width: 65px;
+}
+
+.fp-select-year {
+    min-width: 58px;
+}
+
+.fp-select-sm {
+    min-width: 38px;
+}
+
+.fp-select:focus {
+    border-color: #007acc;
+}
+
+.fp-unit {
+    font-size: 10px;
+    color: #858585;
+    margin-right: 2px;
+}
+
+.fp-color-picker {
+    width: 44px;
+    height: 24px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    background: #3c3c3c;
+    padding: 1px;
+    cursor: pointer;
+}
+
+.fp-color-code {
+    font-size: 10px;
+    color: #858585;
+    font-family: monospace;
+}
+
+.fp-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #3c3c3c;
+}
+
+.fp-btn {
+    flex: 1;
+    padding: 6px 0;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.fp-btn-primary {
+    background: #007acc;
+    color: #ffffff;
+}
+
+.fp-btn-primary:hover:not(:disabled) {
+    background: #0098ff;
+}
+
+.fp-btn-primary:disabled {
+    background: #3c3c3c;
+    color: #555;
+    cursor: not-allowed;
+}
+
+.fp-btn-primary.active {
+    background: #e05050;
+}
+
+.fp-btn-primary.active:hover {
+    background: #c04040;
+}
+
+.fp-btn-secondary {
+    background: #3c3c3c;
+    color: #cccccc;
+}
+
+.fp-btn-secondary:hover {
+    background: #4e4e4e;
+}
+
  /* 사이드바 컨테이너 */
  #sidebar {
      position: absolute;
@@ -185,6 +422,96 @@
 
 .settings-select:focus {
     border-color: #007acc;
+}
+
+/* 설정 체크박스 레이블 */
+.settings-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #cccccc;
+    margin-bottom: 6px;
+}
+
+.settings-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #007acc;
+    cursor: pointer;
+}
+
+/* 하위 옵션 영역 */
+.settings-sub-options {
+    margin-left: 24px;
+    padding: 6px 0 0 0;
+    display: none;
+}
+
+.settings-sub-options.visible {
+    display: block;
+}
+
+.settings-sub-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.settings-sub-label {
+    font-size: 11px;
+    color: #858585;
+    flex-shrink: 0;
+}
+
+/* 토글 레이블 (ON/OFF) */
+.settings-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #cccccc;
+}
+
+.settings-toggle-label input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: #007acc;
+    cursor: pointer;
+}
+
+.toggle-text {
+    font-size: 11px;
+    color: #858585;
+    min-width: 24px;
+}
+
+/* 라디오 그룹 */
+.settings-radio-group {
+    display: flex;
+    gap: 10px;
+}
+
+.settings-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #cccccc;
+}
+
+.settings-radio-label input[type="radio"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: #007acc;
+    cursor: pointer;
 }
 
 .settings-select optgroup {

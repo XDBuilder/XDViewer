@@ -26,6 +26,102 @@
     <!-- 지도 표시 영역 -->
     <div id='map'></div>
 
+    <!-- 지도 컨트롤 버튼 -->
+    <div id="map-controls">
+        <button id="btnResetView" class="map-control-btn" title="초기화">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 8a6 6 0 0 1 10.47-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M14 8a6 6 0 0 1-10.47 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M13 1.5V4.5H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 14.5V11.5H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        <button id="btnNorthView" class="map-control-btn" title="정북방향">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <text x="10" y="7.5" text-anchor="middle" font-size="8" font-weight="bold" fill="#e05050" font-family="Arial,sans-serif">N</text>
+                <path d="M10 9L7.5 16h5L10 9z" fill="currentColor" opacity="0.4"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- 그림자 시뮬레이션 패널 -->
+    <div id="shadow-panel" class="floating-panel" style="display:none;">
+        <div class="floating-panel-header">
+            <span>그림자 시뮬레이션</span>
+            <button id="shadowPanelClose" class="floating-panel-close">&times;</button>
+        </div>
+        <div class="floating-panel-body">
+            <!-- 모드 선택 -->
+            <div class="fp-mode-tabs">
+                <button class="fp-mode-tab active" data-mode="fixed">고정 시간</button>
+                <button class="fp-mode-tab" data-mode="simulation">시뮬레이션</button>
+            </div>
+
+            <!-- 공통: 날짜 -->
+            <div class="fp-row">
+                <label class="fp-label">날짜</label>
+                <div class="fp-inputs">
+                    <select id="SE_Year" class="fp-select fp-select-year"></select><span class="fp-unit">년</span>
+                    <select id="SE_Month" class="fp-select fp-select-sm"></select><span class="fp-unit">월</span>
+                    <select id="SE_Day" class="fp-select fp-select-sm"></select><span class="fp-unit">일</span>
+                </div>
+            </div>
+
+            <!-- 고정 시간 모드 -->
+            <div id="shadowFixedMode">
+                <div class="fp-row">
+                    <label class="fp-label">표시 모드</label>
+                    <div class="fp-inputs">
+                        <select id="SE_DrawMode" class="fp-select" style="min-width:100px;">
+                            <option value="1" selected>기본</option>                            
+                            <option value="3">선</option>
+                            <option value="4">면</option>                            
+                        </select>
+                    </div>
+                </div>
+                <div class="fp-row">
+                    <label class="fp-label">시간</label>
+                    <div class="fp-inputs">
+                        <select id="SE_FixedHour" class="fp-select"></select><span class="fp-unit">시</span>
+                        <select id="SE_FixedMinute" class="fp-select"></select><span class="fp-unit">분</span>
+                    </div>
+                </div>
+                <div class="fp-actions">
+                    <button id="shadowApplyBtn" class="fp-btn fp-btn-primary">적용</button>
+                    <button id="shadowClearBtn" class="fp-btn fp-btn-secondary">지우기</button>
+                </div>
+            </div>
+
+            <!-- 시뮬레이션 모드 -->
+            <div id="shadowSimMode" style="display:none;">
+                <div class="fp-row">
+                    <label class="fp-label">시작 시간</label>
+                    <div class="fp-inputs">
+                        <select id="SE_StartHour" class="fp-select"></select><span class="fp-unit">시</span>
+                        <select id="SE_StartMinute" class="fp-select"></select><span class="fp-unit">분</span>
+                    </div>
+                </div>
+                <div class="fp-row">
+                    <label class="fp-label">종료 시간</label>
+                    <div class="fp-inputs">
+                        <select id="SE_StopHour" class="fp-select"></select><span class="fp-unit">시</span>
+                        <select id="SE_StopMinute" class="fp-select"></select><span class="fp-unit">분</span>
+                    </div>
+                </div>
+                <div class="fp-row">
+                    <label class="fp-label">시간 간격</label>
+                    <div class="fp-inputs">
+                        <select id="SE_TimeTerm" class="fp-select"></select><span class="fp-unit">분</span>
+                    </div>
+                </div>
+                <div class="fp-actions">
+                    <button id="shadowPlayBtn" class="fp-btn fp-btn-primary">재생</button>
+                    <button id="shadowStopBtn" class="fp-btn fp-btn-secondary">정지</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- VSCode 스타일 사이드바 -->
     <div id="sidebar">
         <!-- 탭 바 -->
@@ -35,6 +131,9 @@
             </button>
             <button class="tab-button" data-tab="settings" title="설정">
                 ⚙
+            </button>
+            <button class="tab-button" data-tab="analysis" title="분석">
+                △
             </button>
             <button class="tab-button" data-tab="info" title="정보">
                 ⓘ
@@ -90,6 +189,62 @@
                             <option value="middle" selected>보통</option>
                             <option value="high">높음</option>
                         </select>
+                    </div>
+                    <div class="settings-section">
+                        <label class="settings-checkbox-label">
+                            <input type="checkbox" id="buildingToggle">
+                            <span>건물 표시</span>
+                        </label>
+                        <div class="settings-sub-options" id="buildingOptions">
+                            <div class="settings-sub-row">
+                                <span class="settings-sub-label">심플모드</span>
+                                <label class="settings-toggle-label">
+                                    <input type="checkbox" id="simpleModeToggle" checked>
+                                    <span class="toggle-text" id="simpleModeText">ON</span>
+                                </label>
+                            </div>
+                            <div class="settings-sub-row">
+                                <span class="settings-sub-label">렌더링 모드</span>
+                                <div class="settings-radio-group">
+                                    <label class="settings-radio-label">
+                                        <input type="radio" name="renderMode" value="1">
+                                        <span>Normal</span>
+                                    </label>
+                                    <label class="settings-radio-label">
+                                        <input type="radio" name="renderMode" value="2" checked>
+                                        <span>Gradient</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="settings-sub-row">
+                                <span class="settings-sub-label">엣지 렌더링</span>
+                                <div class="settings-radio-group">
+                                    <label class="settings-radio-label">
+                                        <input type="radio" name="edgeRender" value="true">
+                                        <span>Enable</span>
+                                    </label>
+                                    <label class="settings-radio-label">
+                                        <input type="radio" name="edgeRender" value="false" checked>
+                                        <span>Disable</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 분석 패널 -->
+            <div id="analysis-panel" class="panel">
+                <div class="panel-header">
+                    <span>분석</span>
+                </div>
+                <div class="panel-content settings-content">
+                    <div class="settings-section">
+                        <label class="settings-checkbox-label">
+                            <input type="checkbox" id="shadowToggle">
+                            <span>그림자 시뮬레이션</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -1063,6 +1218,347 @@
                 }
             });
 
+            // 지도 컨트롤 버튼
+            document.getElementById('btnResetView').addEventListener('click', () => {
+                Module.getViewCamera().move(new Module.JSVector3D(126.9, 37.5, 19000000), 89.9, 0, 0);
+            });
+
+            const btnNorthView = document.getElementById('btnNorthView');
+            const northIcon = btnNorthView.querySelector('svg');
+            btnNorthView.addEventListener('click', () => {
+                const camera = Module.getViewCamera();
+                const pos = camera.getLocation();
+                const tilt = camera.getTilt();
+                camera.move(new Module.JSVector3D(pos.Longitude, pos.Latitude, pos.Altitude), tilt, 0, 0);
+            });
+
+            // 카메라 방향에 따라 나침반 아이콘 회전
+            (function updateCompass() {
+                try {
+                    const camera = Module.getViewCamera();
+                    const dir = camera.getDirect();
+                    northIcon.style.transform = 'rotate(' + (-dir) + 'deg)';
+                } catch (e) {}
+                requestAnimationFrame(updateCompass);
+            })();
+
+            // 건물 표시 설정
+            let buildingLayer = null;
+            const buildingToggle = document.getElementById('buildingToggle');
+            const buildingOptions = document.getElementById('buildingOptions');
+            const simpleModeToggle = document.getElementById('simpleModeToggle');
+            const simpleModeText = document.getElementById('simpleModeText');
+
+            function addBuildingLayer() {
+                if (buildingLayer) return;
+                buildingLayer = Module.getTileLayerList().createXDServerLayer({
+                    url: "https://xdworld.vworld.kr",
+                    servername: "XDServer3d",
+                    name: "facility_build",
+                    type: 9,
+                    minLevel: 0,
+                    maxLevel: 15
+                });
+                Module.setVisibleRange("facility_build", 3.0, 100000.0);
+
+                // 현재 설정값 적용
+                if (simpleModeToggle.checked) {
+                    Module.getMap().setSimpleMode(true);
+                    const renderMode = document.querySelector('input[name="renderMode"]:checked').value;
+                    Module.getMap().setRenderMode(parseInt(renderMode));
+                    const edgeRender = document.querySelector('input[name="edgeRender"]:checked').value === 'true';
+                    Module.SetSimpleModeLineRender(edgeRender);
+                }
+            }
+
+            function removeBuildingLayer() {
+                if (!buildingLayer) return;
+                Module.getMap().setSimpleMode(false);
+                Module.getTileLayerList().delLayerAtName("facility_build");
+                buildingLayer = null;
+            }
+
+            buildingToggle.addEventListener('change', () => {
+                if (buildingToggle.checked) {
+                    buildingOptions.classList.add('visible');
+                    addBuildingLayer();
+                } else {
+                    buildingOptions.classList.remove('visible');
+                    removeBuildingLayer();
+                }
+            });
+
+            simpleModeToggle.addEventListener('change', () => {
+                const on = simpleModeToggle.checked;
+                simpleModeText.textContent = on ? 'ON' : 'OFF';
+                if (buildingLayer) {
+                    Module.getMap().setSimpleMode(on);
+                    if (on) {
+                        const renderMode = document.querySelector('input[name="renderMode"]:checked').value;
+                        Module.getMap().setRenderMode(parseInt(renderMode));
+                        const edgeRender = document.querySelector('input[name="edgeRender"]:checked').value === 'true';
+                        Module.SetSimpleModeLineRender(edgeRender);
+                    }
+                }
+            });
+
+            document.querySelectorAll('input[name="renderMode"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (buildingLayer && simpleModeToggle.checked) {
+                        Module.getMap().setRenderMode(parseInt(e.target.value));
+                    }
+                });
+            });
+
+            document.querySelectorAll('input[name="edgeRender"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (buildingLayer && simpleModeToggle.checked) {
+                        Module.SetSimpleModeLineRender(e.target.value === 'true');
+                    }
+                });
+            });
+
+            // 그림자 시뮬레이션
+            let shadowAnalysis = null;
+            const shadowPanel = document.getElementById('shadow-panel');
+            const shadowToggle = document.getElementById('shadowToggle');
+            const shadowPlayBtn = document.getElementById('shadowPlayBtn');
+            const shadowStopBtn = document.getElementById('shadowStopBtn');
+            const shadowApplyBtn = document.getElementById('shadowApplyBtn');
+            const shadowFixedMode = document.getElementById('shadowFixedMode');
+            const shadowSimMode = document.getElementById('shadowSimMode');
+            let shadowPlaying = false;
+            let shadowPaused = false; // 일시정지 상태
+            let shadowSimTimer = null;
+            let shadowSimCurrentMinutes = 0;
+            let shadowMode = 'fixed'; // 'fixed' or 'simulation'
+
+            function insertTimeList(elementId, start, end, current) {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+                let html = '';
+                for (let i = start; i <= end; i++) {
+                    html += '<option value="' + i + '">' + i + '</option>';
+                }
+                el.innerHTML = html;
+                el.value = current;
+            }
+
+            function initShadowPanel() {
+                const now = new Date();
+                insertTimeList('SE_Year', 1900, now.getFullYear(), now.getFullYear());
+                insertTimeList('SE_Month', 1, 12, now.getMonth() + 1);
+                insertTimeList('SE_Day', 1, 31, now.getDate());
+                insertTimeList('SE_FixedHour', 0, 23, now.getHours());
+                insertTimeList('SE_FixedMinute', 0, 59, 0);
+                insertTimeList('SE_StartHour', 0, 23, 9);
+                insertTimeList('SE_StartMinute', 0, 59, 0);
+                insertTimeList('SE_StopHour', 0, 23, 18);
+                insertTimeList('SE_StopMinute', 0, 59, 0);
+                insertTimeList('SE_TimeTerm', 1, 60, 30);
+
+                updateSunriseSunset();
+            }
+
+            function updateSunriseSunset() {
+                if (!shadowAnalysis) return;
+                const y = parseInt(document.getElementById('SE_Year').value);
+                const m = parseInt(document.getElementById('SE_Month').value);
+                const d = parseInt(document.getElementById('SE_Day').value);
+                try {
+                    const rise = shadowAnalysis.GetSunrise(y, m, d);
+                    const set = shadowAnalysis.GetSunset(y, m, d);
+                    document.getElementById('SE_StartHour').value = parseInt(rise);
+                    document.getElementById('SE_StartMinute').value = parseInt((rise % 1.0) * 60);
+                    document.getElementById('SE_StopHour').value = parseInt(set);
+                    document.getElementById('SE_StopMinute').value = parseInt((set % 1.0) * 60);
+                } catch (e) {}
+            }
+
+            function ensureShadowAnalysis() {
+                // 건물이 꺼져있으면 자동으로 켜기
+                if (!buildingToggle.checked) {
+                    buildingToggle.checked = true;
+                    buildingToggle.dispatchEvent(new Event('change'));
+                }
+                if (!shadowAnalysis) {
+                    shadowAnalysis = Module.getAnalysis();
+                }
+                shadowAnalysis.setAllObjectRenderShadow(true);
+                shadowAnalysis.SetLimitSunAngle(true, 7.5);
+            }
+
+            // 고정 시간 그림자 적용
+            function applyFixedShadow() {
+                ensureShadowAnalysis();
+                const drawMode = parseInt(document.getElementById('SE_DrawMode').value);
+                shadowAnalysis.setShadowDrawMode(drawMode);
+                const y = parseInt(document.getElementById('SE_Year').value);
+                const m = parseInt(document.getElementById('SE_Month').value);
+                const d = parseInt(document.getElementById('SE_Day').value);
+                const h = parseInt(document.getElementById('SE_FixedHour').value);
+                const min = parseInt(document.getElementById('SE_FixedMinute').value);
+                shadowAnalysis.createShadow(y, m, d, h, min);
+            }
+
+            // 시뮬레이션 시간 포맷
+            function formatSimTime(mins) {
+                const hh = Math.floor(mins / 60);
+                const mm = mins % 60;
+                return `${hh}:${String(mm).padStart(2, '0')}`;
+            }
+
+            // 시뮬레이션 재생
+            function startShadow() {
+                ensureShadowAnalysis();
+                shadowAnalysis.setShadowDrawMode(4); // 시뮬레이션은 면 모드 고정
+                const term = parseInt(document.getElementById('SE_TimeTerm').value);
+                shadowAnalysis.setShadowSimulTerm(term);
+
+                const y = parseInt(document.getElementById('SE_Year').value);
+                const m = parseInt(document.getElementById('SE_Month').value);
+                const d = parseInt(document.getElementById('SE_Day').value);
+                const eh = parseInt(document.getElementById('SE_StopHour').value);
+                const em = parseInt(document.getElementById('SE_StopMinute').value);
+                const endMinutes = eh * 60 + em;
+
+                if (shadowPaused) {
+                    // 일시정지 상태에서 재개: 현재 시간부터 끝까지
+                    const resumeH = Math.floor(shadowSimCurrentMinutes / 60);
+                    const resumeM = shadowSimCurrentMinutes % 60;
+                    shadowAnalysis.setShadowSimulTime(y, m, d, resumeH, resumeM, eh, em);
+                    shadowPaused = false;
+                } else {
+                    // 새로 시작
+                    const sh = parseInt(document.getElementById('SE_StartHour').value);
+                    const sm = parseInt(document.getElementById('SE_StartMinute').value);
+                    shadowAnalysis.setShadowSimulTime(y, m, d, sh, sm, eh, em);
+                    shadowSimCurrentMinutes = sh * 60 + sm;
+                }
+
+                shadowAnalysis.setShadowSimulation(true);
+                shadowPlaying = true;
+                shadowPlayBtn.classList.add('active');
+                shadowPlayBtn.textContent = formatSimTime(shadowSimCurrentMinutes);
+
+                if (shadowSimTimer) clearInterval(shadowSimTimer);
+                shadowSimTimer = setInterval(() => {
+                    shadowSimCurrentMinutes += term;
+                    if (shadowSimCurrentMinutes >= endMinutes) {
+                        clearInterval(shadowSimTimer);
+                        shadowSimTimer = null;
+                        shadowAnalysis.setShadowSimulation(false);
+                        shadowAnalysis.createShadow(y, m, d, eh, em);
+                        shadowPlayBtn.textContent = '완료';
+                        shadowPlayBtn.classList.remove('active');
+                        shadowPlaying = false;
+                        shadowPaused = false;
+                    } else {
+                        shadowPlayBtn.textContent = formatSimTime(shadowSimCurrentMinutes);
+                    }
+                }, 1000);
+            }
+
+            function stopShadow() {
+                if (shadowSimTimer) {
+                    clearInterval(shadowSimTimer);
+                    shadowSimTimer = null;
+                }
+                if (shadowAnalysis) {
+                    shadowAnalysis.setShadowSimulation(false);
+                    // 정지 시 현재 시간의 그림자를 남김
+                    if (shadowPlaying) {
+                        const y = parseInt(document.getElementById('SE_Year').value);
+                        const m = parseInt(document.getElementById('SE_Month').value);
+                        const d = parseInt(document.getElementById('SE_Day').value);
+                        const h = Math.floor(shadowSimCurrentMinutes / 60);
+                        const min = shadowSimCurrentMinutes % 60;
+                        shadowAnalysis.createShadow(y, m, d, h, min);
+                        shadowPaused = true; // 일시정지 상태 기억
+                    }
+                }
+                shadowPlaying = false;
+                shadowPlayBtn.textContent = formatSimTime(shadowSimCurrentMinutes);
+                shadowPlayBtn.classList.remove('active');
+            }
+
+            // 모드 탭 전환
+            document.querySelectorAll('.fp-mode-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    stopShadow();
+                    shadowPaused = false; // 탭 전환 시 완전 초기화
+                    shadowPlayBtn.textContent = '재생';
+                    document.querySelectorAll('.fp-mode-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    shadowMode = tab.dataset.mode;
+                    shadowFixedMode.style.display = shadowMode === 'fixed' ? 'block' : 'none';
+                    shadowSimMode.style.display = shadowMode === 'simulation' ? 'block' : 'none';
+                });
+            });
+
+            shadowToggle.addEventListener('change', () => {
+                if (shadowToggle.checked) {
+                    shadowPanel.style.display = 'block';
+                    initShadowPanel();
+                    if (!buildingToggle.checked) {
+                        buildingToggle.checked = true;
+                        buildingToggle.dispatchEvent(new Event('change'));
+                    }
+                } else {
+                    shadowPanel.style.display = 'none';
+                    stopShadow();
+                    shadowPaused = false; // 패널 닫기 시 완전 초기화
+                    shadowPlayBtn.textContent = '재생';
+                    if (shadowAnalysis) {
+                        shadowAnalysis.setAllObjectRenderShadow(false);
+                    }
+                }
+            });
+
+            document.getElementById('shadowPanelClose').addEventListener('click', () => {
+                shadowToggle.checked = false;
+                shadowToggle.dispatchEvent(new Event('change'));
+            });
+
+            ['SE_Year', 'SE_Month', 'SE_Day'].forEach(id => {
+                document.getElementById(id).addEventListener('change', updateSunriseSunset);
+            });
+
+            shadowApplyBtn.addEventListener('click', () => {
+                applyFixedShadow();
+                shadowApplyBtn.disabled = true;
+            });
+
+            document.getElementById('SE_DrawMode').addEventListener('change', (e) => {
+                if (shadowAnalysis && shadowMode === 'fixed') {
+                    shadowAnalysis.setShadowDrawMode(parseInt(e.target.value));
+                    shadowApplyBtn.disabled = true;
+                }
+            });
+
+            document.getElementById('shadowClearBtn').addEventListener('click', () => {
+                if (shadowAnalysis) {
+                    document.getElementById('SE_DrawMode').value = '1';
+                    shadowAnalysis.setShadowDrawMode(1);
+                    shadowAnalysis.clearShadow();
+                }
+                shadowApplyBtn.disabled = false;
+            });
+
+            shadowPlayBtn.addEventListener('click', () => {
+                if (shadowPlaying) {
+                    stopShadow();
+                } else {
+                    startShadow();
+                }
+            });
+
+            shadowStopBtn.addEventListener('click', () => {
+                stopShadow();
+                shadowPaused = false; // 정지 버튼은 완전 초기화
+                shadowPlayBtn.textContent = '재생';
+            });
+
             const tabButtons = document.querySelectorAll('.tab-button');
             const sidebarPanel = document.getElementById('sidebar-panel');
             const tabbar = document.getElementById('tabbar');
@@ -1915,24 +2411,6 @@
                         loadingScreen.style.display = 'none';
                     }, 1500); // fade-out 애니메이션 시간과 동일 (1.5초)
                 }, 3000); // 로딩 완료 후 3초 대기
-
-                /*
-                                // 기본 타일 레이어 설정
-                                var layerSimple = Module.getTileLayerList().createXDServerLayer({
-                                    url: "https://xdworld.vworld.kr",
-                                    servername: "XDServer3d",
-                                    name: "facility_build",
-                                    type: 9,
-                                    minLevel: 0,
-                                    maxLevel: 15
-                                });
-                                Module.setVisibleRange("facility_build", 3.0, 100000.0); // 가시 범위 설정
-                
-                                // 간단 모드 설정
-                                Module.getMap().setSimpleMode(true);
-                                Module.getViewCamera().setLocation(new Module.JSVector3D(126.9, 37.5, 300.0)); // 초기 카메라 위치 설정
-                                Module.getViewCamera().setTilt(30); // 카메라 기울기 설정
-                */
 
                 // SQLite 및 하단 패널 초기화
                 initSqlite();

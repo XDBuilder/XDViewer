@@ -6,7 +6,8 @@
       "WebFetch(domain:egiscorp.gitbook.io)",
       "WebFetch(domain:sandbox.egiscloud.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:cdn.xdworld.kr)"
+      "WebFetch(domain:cdn.xdworld.kr)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
