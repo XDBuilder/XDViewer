@@ -119,6 +119,8 @@ $ npm start
   - TILE_LAYER_TYPE_REAL3D
 - 📍 POI (ETLT_3DPOINT)
   - TILE_LAYER_TYPE_POI
+- 🏔️ 지형 (ETLT_BASE_DEM)
+  - ETLT_BASE_DEM (bil)
 
 ## 💡 7. **팁**
 - DevTools는 Electron 개발 시 필수! F12로 언제든 열어서 디버깅 가능

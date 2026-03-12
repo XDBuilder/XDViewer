@@ -4076,6 +4076,60 @@
                         if (layerType == "ETLT_REAL3D") {
                             type = Module.TILE_LAYER_TYPE_REAL3D;
                         }
+                        if (layerType == "ETLT_BASE_DEM") {
+                            var terrain = Module.getTerrain();
+                            terrain.SetUseDemBox(true);
+                            terrain.setDemBox({
+                                server: {
+                                    url: layerPath,
+                                    layer_name: layerName,
+                                    format: "bil",
+                                    request_type: "file",
+                                },
+                                area: {
+                                    min: { lon: minLon, lat: minLat },
+                                    max: { lon: maxLon, lat: maxLat }
+                                }
+                            });
+                            Module.XDRenderData();
+                            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);
+
+                            // 레이어 패널에 추가
+                            const layerItem = document.createElement('div');
+                            layerItem.className = 'layer-item';
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = true;
+                            checkbox.addEventListener('change', () => {
+                                terrain.SetUseDemBox(checkbox.checked);
+                                Module.XDRenderData();
+                            });
+
+                            const label = document.createElement('span');
+                            label.textContent = layerName;
+                            label.title = layerName;
+                            label.style.cursor = 'pointer';
+                            label.addEventListener('click', () => {
+                                Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, 5000), 89.9, 0, 0);
+                            });
+
+                            const removeBtn = document.createElement('button');
+                            removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+                            removeBtn.title = `${layerName} 레이어를 삭제합니다`;
+                            removeBtn.addEventListener('click', () => {
+                                terrain.SetUseDemBox(false);
+                                Module.XDRenderData();
+                                layerItem.remove();
+                            });
+
+                            layerItem.appendChild(checkbox);
+                            layerItem.appendChild(label);
+                            layerItem.appendChild(removeBtn);
+                            document.getElementById('interface').appendChild(layerItem);
+                            index++;
+                            return;
+                        }
                         if (layerType == "ETLT_3DPOINT") {
                             type = Module.TILE_LAYER_TYPE_POI;
                             // 아래 좌표는 테스트용입니다. 제주도 
