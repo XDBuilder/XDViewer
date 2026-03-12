@@ -693,6 +693,16 @@
                 }
             });
 
+            // 창 벗어날 때 마우스 버튼 강제 릴리즈
+            function releaseMouseOnCanvas() {
+                const canvas = document.querySelector('canvas');
+                if (canvas) {
+                    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+                }
+            }
+            window.addEventListener('blur', releaseMouseOnCanvas);
+            document.addEventListener('mouseleave', releaseMouseOnCanvas);
+
             // 닫기
             document.getElementById('bottomPanelClose').addEventListener('click', hideBottomPanel);
 
@@ -4103,7 +4113,7 @@
                             checkbox.checked = true;
                             checkbox.addEventListener('change', () => {
                                 terrain.SetUseDemBox(checkbox.checked);
-                                Module.XDRenderData();
+                                Module.XDEPlanetRefresh();
                             });
 
                             const label = document.createElement('span');
@@ -4119,7 +4129,7 @@
                             removeBtn.title = `${layerName} 레이어를 삭제합니다`;
                             removeBtn.addEventListener('click', () => {
                                 terrain.SetUseDemBox(false);
-                                Module.XDRenderData();
+                                Module.XDEPlanetRefresh();
                                 layerItem.remove();
                             });
 
