@@ -242,6 +242,23 @@
                 </div>
                 <div class="panel-content settings-content">
                     <div class="settings-section">
+                        <div class="settings-label" style="color:#fff;font-size:13px;">지형 렌더링</div>
+                        <div class="settings-radio-group">
+                            <label class="settings-radio-label">
+                                <input type="radio" name="terrainRenderMode" value="0" checked>
+                                <span>Normal</span>
+                            </label>
+                            <label class="settings-radio-label">
+                                <input type="radio" name="terrainRenderMode" value="10">
+                                <span>Slope</span>
+                            </label>
+                            <label class="settings-radio-label">
+                                <input type="radio" name="terrainRenderMode" value="11">
+                                <span>Aspect</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-section">
                         <label class="settings-checkbox-label">
                             <input type="checkbox" id="shadowToggle">
                             <span>그림자 시뮬레이션</span>
@@ -1332,6 +1349,13 @@
                     if (buildingLayer && simpleModeToggle.checked) {
                         Module.SetSimpleModeLineRender(e.target.value === 'true');
                     }
+                });
+            });
+
+            // 지형 렌더링 모드
+            document.querySelectorAll('input[name="terrainRenderMode"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    Module.getMap().setTerrainEffect(parseInt(e.target.value));
                 });
             });
 
