@@ -40,6 +40,7 @@
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <text x="10" y="7.5" text-anchor="middle" font-size="8" font-weight="bold" fill="#e05050" font-family="Arial,sans-serif">N</text>
                 <path d="M10 9L7.5 16h5L10 9z" fill="currentColor" opacity="0.4"/>
+                <line id="horizonLine" x1="2" y1="10" x2="18" y2="10" stroke="currentColor" stroke-width="1" opacity="0.5"/>
             </svg>
         </button>
     </div>
@@ -1235,6 +1236,7 @@
 
             const btnNorthView = document.getElementById('btnNorthView');
             const northIcon = btnNorthView.querySelector('svg');
+            const horizonLine = northIcon.querySelector('#horizonLine');
             btnNorthView.addEventListener('click', () => {
                 const camera = Module.getViewCamera();
                 const pos = camera.getLocation();
@@ -1247,7 +1249,12 @@
                 try {
                     const camera = Module.getViewCamera();
                     const dir = camera.getDirect();
+                    const tilt = camera.getTilt();
                     northIcon.style.transform = 'rotate(' + (-dir) + 'deg)';
+                    // tilt 90°(수직) → y=2(상단), tilt 0°(수평) → y=10(중앙)
+                    const y = Math.max(2, Math.min(18, 10 - (tilt / 90) * 8));
+                    horizonLine.setAttribute('y1', y);
+                    horizonLine.setAttribute('y2', y);
                 } catch (e) {}
                 requestAnimationFrame(updateCompass);
             })();
