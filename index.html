@@ -26,6 +26,23 @@
     <!-- 지도 표시 영역 -->
     <div id='map'></div>
 
+    <!-- 파일 드래그 오버레이 -->
+    <div id="dropOverlay">
+        <div class="drop-overlay-content">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 15V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>파일을 놓아 불러오기</span>
+        </div>
+    </div>
+
+    <!-- 지형 렌더링 범례 오버레이 -->
+    <div id="terrainLegend" style="display:none; position:fixed; left:16px; bottom:16px; z-index:1500; background:rgba(18,18,18,0.75); border-radius:6px; padding:8px 10px; backdrop-filter:blur(4px); flex-direction:column; align-items:flex-start; gap:6px;">
+        <div id="legendTitle" style="font-size:11px; color:#aaa; white-space:nowrap; align-self:center;"></div>
+        <div id="legendItems" style="display:flex; flex-direction:column; gap:2px;"></div>
+    </div>
+
     <!-- 지도 컨트롤 버튼 -->
     <div id="map-controls">
         <button id="btnResetView" class="map-control-btn" title="초기화">
@@ -260,6 +277,12 @@
                     </div>
                     <div class="settings-section">
                         <label class="settings-checkbox-label">
+                            <input type="checkbox" id="terrainSliceToggle">
+                            <span>지형단면도</span>
+                        </label>
+                    </div>
+                    <div class="settings-section">
+                        <label class="settings-checkbox-label">
                             <input type="checkbox" id="shadowToggle">
                             <span>그림자 시뮬레이션</span>
                         </label>
@@ -339,28 +362,36 @@
     <div id="bottom-panel" onmouseover="mouseOverInterface(true);" onmouseout="mouseOverInterface(false);">
         <div id="bottom-panel-header">
             <div id="bottom-panel-tabs">
-                <span class="bottom-panel-title">SQL</span>
+                <span class="bottom-panel-tab active" id="bottomTabSQL">SQL</span>
+                <span class="bottom-panel-tab" id="bottomTabSlice">지형단면도</span>
                 <select id="sqlTableSelect" title="테이블 선택">
                     <option value="">테이블 선택...</option>
                 </select>
             </div>
             <div id="bottom-panel-actions">
                 <span id="sqlStatus"></span>
+                <span id="terrainSliceStatus" style="display:none;font-size:11px;color:#aaa;"></span>
+                <button id="terrainSliceClearBtn" style="display:none;" class="csv-btn csv-btn-cancel">지우기</button>
                 <button id="bottomPanelClose" title="닫기">&times;</button>
             </div>
         </div>
         <div id="bottom-panel-content">
-            <div id="sql-query-area">
-                <textarea id="sqlInput" placeholder="SELECT * FROM tablename LIMIT 100" spellcheck="false"></textarea>
-                <button id="sqlRunBtn" class="csv-btn csv-btn-ok" title="Ctrl+Enter">실행</button>
+            <div id="sql-panel-area">
+                <div id="sql-query-area">
+                    <textarea id="sqlInput" placeholder="SELECT * FROM tablename LIMIT 100" spellcheck="false"></textarea>
+                    <button id="sqlRunBtn" class="csv-btn csv-btn-ok" title="Ctrl+Enter">실행</button>
+                </div>
+                <div id="sql-results-area">
+                    <table id="sqlResultsTable">
+                        <thead id="sqlResultsHead"></thead>
+                        <tbody id="sqlResultsBody"></tbody>
+                    </table>
+                </div>
+                <div id="sqlResultsInfo"></div>
             </div>
-            <div id="sql-results-area">
-                <table id="sqlResultsTable">
-                    <thead id="sqlResultsHead"></thead>
-                    <tbody id="sqlResultsBody"></tbody>
-                </table>
+            <div id="terrain-slice-area" style="display:none;flex:1;padding:8px;overflow:hidden;">
+                <canvas id="terrainSliceChart" height="0" style="display:block;width:100%;"></canvas>
             </div>
-            <div id="sqlResultsInfo"></div>
         </div>
     </div>
 
@@ -552,8 +583,9 @@
                 delete sqlTableMap[key];
                 updateTableSelect();
 
-                // 테이블이 하나도 없으면 패널 닫기
+                // 테이블이 하나도 없으면 SQL 패널 닫기
                 if (Object.keys(sqlTableMap).length === 0) {
+                    sqlPanelOpen = false;
                     hideBottomPanel();
                 }
             }
@@ -562,6 +594,7 @@
         // ============ 하단 패널 (SQL 데이터 뷰어) ============
         let bottomPanelVisible = false;
         let bottomPanelHeight = 250;
+        let sqlPanelOpen = false; // SQL 패널이 독립적으로 열려있는지
 
         function showBottomPanel() {
             document.getElementById('bottom-panel').classList.add('visible');
@@ -579,17 +612,17 @@
 
         function updateMapSize() {
             const mapEl = document.getElementById('map');
+            mapEl.style.height = '100%';
             if (bottomPanelVisible) {
-                mapEl.style.height = `calc(100% - ${bottomPanelHeight}px)`;
                 document.getElementById('bottom-panel').style.height = bottomPanelHeight + 'px';
                 document.getElementById('bottom-panel-resizer').style.bottom = bottomPanelHeight + 'px';
-            } else {
-                mapEl.style.height = '100%';
             }
             if (typeof Module === 'object' && typeof Module.Resize === 'function') {
-                const h = bottomPanelVisible ? window.innerHeight - bottomPanelHeight : window.innerHeight;
-                Module.Resize(window.innerWidth, h);
+                Module.Resize(window.innerWidth, window.innerHeight);
                 Module.XDRenderData();
+            }
+            if (window.window.terrainSliceChartObj) {
+                window.window.terrainSliceChartObj.resize();
             }
             // 선택 패널 위치 조정
             const selPanel = document.getElementById('selection-panel');
@@ -711,22 +744,36 @@
                 }
             });
 
-            // 창 벗어날 때 마우스 버튼 강제 릴리즈
+            // 창 벗어날 때 마우스 버튼 강제 릴리즈 (좌클릭 + 우클릭 모두)
             function releaseMouseOnCanvas() {
                 const canvas = document.querySelector('canvas');
                 if (canvas) {
-                    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+                    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, button: 0, buttons: 0 }));
+                    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, button: 2, buttons: 0 }));
                 }
             }
             window.addEventListener('blur', releaseMouseOnCanvas);
             document.addEventListener('mouseleave', releaseMouseOnCanvas);
 
             // 닫기
-            document.getElementById('bottomPanelClose').addEventListener('click', hideBottomPanel);
+            document.getElementById('bottomPanelClose').addEventListener('click', () => {
+                const sliceToggle = document.getElementById('terrainSliceToggle');
+                if (sliceToggle && sliceToggle.checked) {
+                    sliceToggle.checked = false;
+                    sliceToggle.dispatchEvent(new Event('change'));
+                }
+                hideBottomPanel();
+            });
 
             // DB 탭 버튼 토글
             document.getElementById('dbTabButton').addEventListener('click', () => {
-                bottomPanelVisible ? hideBottomPanel() : showBottomPanel();
+                if (bottomPanelVisible) {
+                    sqlPanelOpen = false;
+                    hideBottomPanel();
+                } else {
+                    sqlPanelOpen = true;
+                    showBottomPanel();
+                }
             });
 
             // 실행 버튼
@@ -1164,6 +1211,7 @@
                 const tableName = findSqliteTable(layerFileName);
                 if (tableName) {
                     addMenuItem('테이블 열기', () => {
+                        sqlPanelOpen = true;
                         showBottomPanel();
                         document.getElementById('sqlTableSelect').value = tableName;
                         runDefaultQuery(tableName);
@@ -1353,11 +1401,464 @@
             });
 
             // 지형 렌더링 모드
+            const terrainLegend = document.getElementById('terrainLegend');
+            const legendTitle = document.getElementById('legendTitle');
+            const legendItems = document.getElementById('legendItems');
+
+            function makeLegendItems(entries) {
+                legendItems.innerHTML = entries.map(([color, label]) =>
+                    `<div style="display:flex;align-items:center;gap:6px;">
+                        <div style="width:14px;height:14px;border-radius:2px;background:${color};flex-shrink:0;"></div>
+                        <span style="font-size:11px;color:#ccc;">${label}</span>
+                    </div>`
+                ).join('');
+            }
+
+            function showTerrainLegend(val) {
+                if (val === 10) {
+                    legendTitle.textContent = '경사도 (Slope)';
+                    makeLegendItems([
+                        ['#ffffff', '0°'],
+                        ['#00c800', '15°'],
+                        ['#ffff00', '30°'],
+                        ['#ff8000', '45°'],
+                        ['#ff0000', '90°+'],
+                    ]);
+                    terrainLegend.style.display = 'flex';
+                } else if (val === 11) {
+                    legendTitle.textContent = '향 (Aspect)';
+                    makeLegendItems([
+                        ['#ff0000', 'S (남)'],
+                        ['#ff8000', 'SE (남동)'],
+                        ['#ffff00', 'E (동)'],
+                        ['#80ff00', 'NE (북동)'],
+                        ['#00ff00', 'N (북)'],
+                        ['#00ffff', 'NW (북서)'],
+                        ['#0000ff', 'W (서)'],
+                        ['#ff00ff', 'SW (남서)'],
+                    ]);
+                    terrainLegend.style.display = 'flex';
+                } else {
+                    terrainLegend.style.display = 'none';
+                }
+            }
+
             document.querySelectorAll('input[name="terrainRenderMode"]').forEach(radio => {
                 radio.addEventListener('change', (e) => {
-                    Module.getMap().setTerrainEffect(parseInt(e.target.value));
+                    const val = parseInt(e.target.value);
+                    Module.getMap().setTerrainEffect(val);
+                    showTerrainLegend(val);
                 });
             });
+
+            // 지형단면도
+            const terrainSliceToggle = document.getElementById('terrainSliceToggle');
+            const terrainSliceStatus = document.getElementById('terrainSliceStatus');
+            const terrainSliceChartCanvas = document.getElementById('terrainSliceChart');
+            const terrainSliceArea = document.getElementById('terrain-slice-area');
+            const sqlPanelArea = document.getElementById('sql-panel-area');
+            const bottomTabSQL = document.getElementById('bottomTabSQL');
+            const bottomTabSlice = document.getElementById('bottomTabSlice');
+
+            let terrainSliceMode = false;
+            let terrainSliceStartPos = null;
+            window.window.terrainSliceChartObj = null;
+
+            function loadChartJS(callback) {
+                if (typeof Chart !== 'undefined') { callback(); return; }
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                s.onload = callback;
+                document.body.appendChild(s);
+            }
+
+            function switchBottomTab(tab) {
+                if (tab === 'slice') {
+                    bottomTabSQL.classList.remove('active');
+                    bottomTabSlice.classList.add('active');
+                    sqlPanelArea.style.display = 'none';
+                    terrainSliceArea.style.display = 'flex';
+                    terrainSliceStatus.style.display = '';
+                    document.getElementById('terrainSliceClearBtn').style.display = '';
+                    document.getElementById('sqlTableSelect').style.display = 'none';
+                } else {
+                    bottomTabSlice.classList.remove('active');
+                    bottomTabSQL.classList.add('active');
+                    terrainSliceArea.style.display = 'none';
+                    sqlPanelArea.style.display = 'flex';
+                    terrainSliceStatus.style.display = 'none';
+                    document.getElementById('terrainSliceClearBtn').style.display = 'none';
+                    document.getElementById('sqlTableSelect').style.display = '';
+                }
+            }
+
+            bottomTabSQL.addEventListener('click', () => switchBottomTab('sql'));
+            bottomTabSlice.addEventListener('click', () => switchBottomTab('slice'));
+
+            terrainSliceToggle.addEventListener('change', () => {
+                if (terrainSliceToggle.checked) {
+                    showBottomPanel();
+                    switchBottomTab('slice');
+                    terrainSliceMode = true;
+                    terrainSliceStatus.textContent = '지도에서 시작점을 클릭하세요';
+                    loadChartJS(() => {});
+                } else {
+                    terrainSliceMode = false;
+                    terrainSliceStartPos = null;
+                    clearTerrainSlice();
+                    if (sqlPanelOpen) {
+                        switchBottomTab('sql');
+                    } else {
+                        hideBottomPanel();
+                    }
+                }
+            });
+
+            document.getElementById('terrainSliceClearBtn').addEventListener('click', () => {
+                terrainSliceStartPos = null;
+                terrainSliceStatus.textContent = '지도에서 시작점을 클릭하세요';
+                clearTerrainSlice();
+            });
+
+            function handleTerrainSliceClick(worldPos) {
+                if (!terrainSliceStartPos) {
+                    clearTerrainSlice();
+                    terrainSliceStartPos = worldPos;
+                    createSlicePoint(worldPos, 'S');
+                    terrainSliceStatus.textContent = '끝점을 클릭하세요';
+                } else {
+                    createSlicePoint(worldPos, 'E');
+                    const path = new Module.JSVec3Array();
+                    path.push(terrainSliceStartPos);
+                    path.push(worldPos);
+                    createSliceLine(path);
+                    executeTerrainSlice(path);
+                    terrainSliceStartPos = null;
+                    terrainSliceStatus.textContent = '완료. 다시 클릭하면 새 분석을 시작합니다';
+                }
+            }
+
+            function createSlicePoint(_pos, _text) {
+                let layer = Module.getObjectLayerList().nameAtLayer('TERRAIN_SLICE_POI');
+                if (!layer) { layer = Module.getObjectLayerList().createLayer('TERRAIN_SLICE_POI', Module.ELT_3DPOINT); layer.setMaxDistance(5000000); }
+                const point = Module.createPoint('TERRAIN_SLICE_PT_' + _text);
+                point.setPosition(_pos);
+                point.setText(_text);
+                layer.addObject(point, 0);
+            }
+
+            function createSliceLine(_path) {
+                let layer = Module.getObjectLayerList().nameAtLayer('TERRAIN_SLICE_LINE');
+                if (!layer) { layer = Module.getObjectLayerList().createLayer('TERRAIN_SLICE_LINE', Module.ELT_3DLINE); layer.setMaxDistance(5000000); }
+                const line = Module.createLineString('TERRAIN_SLICE_LINE');
+                line.createbyJson({
+                    coordinates: { coordinate: _path, style: 'JSVector3D' },
+                    type: 0, depth: false,
+                    color: new Module.JSColor(200, 255, 255, 255), width: 2.0
+                });
+                line.setUnderground(true);
+                layer.addObject(line, 0);
+            }
+
+            function pointInPolygon(lon, lat, ring) {
+                let inside = false;
+                for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                    const xi = ring[i][0], yi = ring[i][1];
+                    const xj = ring[j][0], yj = ring[j][1];
+                    if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+                        inside = !inside;
+                    }
+                }
+                return inside;
+            }
+
+            function getHeightFromProps(props) {
+                const heightKeys = ['height', 'HEIGHT', 'Height', 'bldg_height', 'BLDG_HEIGHT',
+                    'maxHeight', 'max_height', 'MAX_HEIGHT', 'HEIGHTROOF', 'heightroof',
+                    'building_height', 'BUILDING_HEIGHT', 'ht', 'HT', 'grd_ht', 'GRD_HT',
+                    'hgt', 'HGT', 'stories', 'floors', 'levels', 'A16', 'a16'];
+                for (const k of heightKeys) {
+                    const v = parseFloat(props[k]);
+                    if (v > 0) return v;
+                }
+                for (const k of Object.keys(props)) {
+                    if (/height|hgt|elev|층수|높이/i.test(k)) {
+                        const v = parseFloat(props[k]);
+                        if (v > 0) return v;
+                    }
+                }
+                return 0;
+            }
+
+            function getBuildingHeightAt(lon, lat, terrainElev) {
+                if (!window.slicePolygonData) return null;
+                let maxTop = null;
+                for (const layerName of Object.keys(window.slicePolygonData)) {
+                    for (const feature of window.slicePolygonData[layerName]) {
+                        const geom = feature.geometry;
+                        if (!geom) continue;
+                        const props = feature.properties || {};
+                        const h = getHeightFromProps(props);
+                        if (!h) continue;
+                        const base = parseFloat(props.base_height || props.BASE_HEIGHT ||
+                            props.min_height || props.MIN_HEIGHT || props.ground_height || 0);
+                        const rings = geom.type === 'MultiPolygon'
+                            ? geom.coordinates.flatMap(p => p)
+                            : geom.coordinates;
+                        for (const ring of rings) {
+                            if (pointInPolygon(lon, lat, ring)) {
+                                const top = terrainElev + base + h;
+                                if (maxTop === null || top > maxTop) maxTop = top;
+                                break;
+                            }
+                        }
+                    }
+                }
+                return maxTop;
+            }
+
+            function debugSlicePolygonData() {
+                if (!window.slicePolygonData) { console.log('[단면도] slicePolygonData 없음'); return; }
+                const keys = Object.keys(window.slicePolygonData);
+                console.log('[단면도] 폴리곤 레이어:', keys);
+                keys.forEach(k => {
+                    const features = window.slicePolygonData[k];
+                    if (features.length > 0)
+                        console.log(`  [${k}] features: ${features.length}, 프로퍼티:`, features[0].properties);
+                });
+            }
+
+            function niceTickInterval(range, targetTicks) {
+                const raw = range / targetTicks;
+                for (const m of [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]) {
+                    if (m >= raw) return m;
+                }
+                return 10000;
+            }
+
+            function executeTerrainSlice(_path) {
+                const pathPoints = Module.getMap().GetPathIntervalPositions(_path, 10.0, false);
+                const count = pathPoints.count();
+                if (count < 2) return;
+
+                const map = Module.getMap();
+                const chartPoints = [], demValues = [], positions = [], buildingTops = [];
+                const surfaceDistances = [0];
+                debugSlicePolygonData();
+                const hasBuildingData = window.slicePolygonData && Object.keys(window.slicePolygonData).length > 0;
+                for (let i = 0; i < count; i++) {
+                    const pos = pathPoints.get(i);
+                    const dem = map.getTerrHeight(pos.Longitude, pos.Latitude);
+                    demValues.push(dem);
+                    chartPoints.push({ x: i * 10, y: dem });
+                    positions.push([pos.Longitude, pos.Latitude, dem]);
+                    if (hasBuildingData) {
+                        buildingTops.push(getBuildingHeightAt(pos.Longitude, pos.Latitude, dem));
+                    }
+                    if (i > 0) {
+                        const p0 = pathPoints.get(i - 1);
+                        const dx = (pos.Longitude - p0.Longitude) * Math.cos(pos.Latitude * Math.PI / 180) * 111320;
+                        const dy = (pos.Latitude - p0.Latitude) * 111320;
+                        const dz = dem - demValues[i - 1];
+                        surfaceDistances.push(surfaceDistances[i - 1] + Math.sqrt(dx * dx + dy * dy + dz * dz));
+                    }
+                }
+
+                // 지도 위 단면선
+                const layerList = new Module.JSLayerList(true);
+                let crossLayer = layerList.nameAtLayer('TERRAIN_SLICE_CROSS');
+                if (!crossLayer) { crossLayer = layerList.createLayer('TERRAIN_SLICE_CROSS', Module.ELT_3DLINE); crossLayer.setMaxDistance(5000000); }
+                else crossLayer.removeAll();
+                const crossLine = Module.createLineString('TERRAIN_SLICE_CROSS');
+                crossLine.createbyJson({
+                    coordinates: { coordinate: positions, style: 'XYZ' },
+                    type: 0, depth: false,
+                    color: new Module.JSColor(200, 255, 255, 0), width: 2.0
+                });
+                crossLine.setUnderground(true);
+                crossLayer.addObject(crossLine, 0);
+
+                // X축 눈금 간격 계산
+                const totalDistance = (count - 1) * 10;
+                const tickInterval = niceTickInterval(totalDistance, 6);
+
+                // 시작/끝 고도 (흰선 직선 보간용)
+                const startAlt = _path.get(0).Altitude;
+                const endAlt = _path.get(1).Altitude;
+
+                // 흰선-노란선 수직 연결선 레이어
+                let tickLineLayer = Module.getObjectLayerList().nameAtLayer('TERRAIN_SLICE_TICK_LINES');
+                if (!tickLineLayer) { tickLineLayer = Module.getObjectLayerList().createLayer('TERRAIN_SLICE_TICK_LINES', Module.ELT_3DLINE); tickLineLayer.setMaxDistance(5000000); }
+                else tickLineLayer.removeAll();
+
+                // 흰색 POI (직선거리), 노란색 POI (표면거리) 레이어
+                let whitePoiLayer = Module.getObjectLayerList().nameAtLayer('TERRAIN_SLICE_WHITE_POI');
+                if (!whitePoiLayer) { whitePoiLayer = Module.getObjectLayerList().createLayer('TERRAIN_SLICE_WHITE_POI', Module.ELT_3DPOINT); whitePoiLayer.setMaxDistance(5000000); }
+                else whitePoiLayer.removeAll();
+
+                let yellowPoiLayer = Module.getObjectLayerList().nameAtLayer('TERRAIN_SLICE_YELLOW_POI');
+                if (!yellowPoiLayer) { yellowPoiLayer = Module.getObjectLayerList().createLayer('TERRAIN_SLICE_YELLOW_POI', Module.ELT_3DPOINT); yellowPoiLayer.setMaxDistance(5000000); }
+                else yellowPoiLayer.removeAll();
+
+                for (let d = tickInterval; d < totalDistance; d += tickInterval) {
+                    const idx = Math.round(d / 10);
+                    if (idx < count) {
+                        const tickPos = pathPoints.get(idx);
+                        const demElev = demValues[idx];
+                        const t = d / totalDistance;
+                        const whiteElev = startAlt + t * (endAlt - startAlt);
+
+                        // 수직 연결선 (흰선~노란선)
+                        const tickLine = Module.createLineString('TERRAIN_TICK_LINE_' + d);
+                        tickLine.createbyJson({
+                            coordinates: { coordinate: [[tickPos.Longitude, tickPos.Latitude, demElev], [tickPos.Longitude, tickPos.Latitude, whiteElev]], style: 'XYZ' },
+                            type: 0, depth: false,
+                            color: new Module.JSColor(160, 200, 200, 200), width: 1.0
+                        });
+                        tickLine.setUnderground(true);
+                        tickLineLayer.addObject(tickLine, 0);
+
+                        // 흰색 POI: 직선거리 (흰선 위치)
+                        const label = d >= 1000 ? (d / 1000).toFixed(1) + 'km' : d + 'm';
+                        const whitePt = Module.createPoint('TERRAIN_WHITE_' + d);
+                        const whitePos = new Module.JSVector3D(tickPos.Longitude, tickPos.Latitude, whiteElev);
+                        whitePt.setPosition(whitePos);
+                        whitePt.setText(label);
+                        whitePoiLayer.addObject(whitePt, 0);
+
+                        // 노란색 POI: 표면거리 (노란선 위치)
+                        const surfDist = surfaceDistances[idx];
+                        const surfLabel = surfDist >= 1000 ? (surfDist / 1000).toFixed(1) + 'km' : Math.round(surfDist) + 'm';
+                        const yellowPt = Module.createPoint('TERRAIN_YELLOW_' + d);
+                        const yellowPos = new Module.JSVector3D(tickPos.Longitude, tickPos.Latitude, demElev);
+                        yellowPt.setPosition(yellowPos);
+                        yellowPt.setText(surfLabel);
+                        yellowPoiLayer.addObject(yellowPt, 0);
+                    }
+                }
+
+                // 끝점 거리 라벨
+                const endPos2 = pathPoints.get(count - 1);
+                const endDemElev = demValues[count - 1];
+                const endLabel = totalDistance >= 1000 ? (totalDistance / 1000).toFixed(2) + 'km' : totalDistance + 'm';
+                const endWhitePt = Module.createPoint('TERRAIN_WHITE_END');
+                endWhitePt.setPosition(new Module.JSVector3D(endPos2.Longitude, endPos2.Latitude, endAlt));
+                endWhitePt.setText(endLabel);
+                whitePoiLayer.addObject(endWhitePt, 0);
+
+                const totalSurface = surfaceDistances[count - 1];
+                const endSurfLabel = totalSurface >= 1000 ? (totalSurface / 1000).toFixed(2) + 'km' : Math.round(totalSurface) + 'm';
+                const endYellowPt = Module.createPoint('TERRAIN_YELLOW_END');
+                endYellowPt.setPosition(new Module.JSVector3D(endPos2.Longitude, endPos2.Latitude, endDemElev));
+                endYellowPt.setText(endSurfLabel);
+                yellowPoiLayer.addObject(endYellowPt, 0);
+
+                // Y축 스케일: 실제 비율에 맞게 계산
+                const cw = terrainSliceArea.clientWidth || 800;
+                const ch = terrainSliceArea.clientHeight || 200;
+                const proportionalYRange = (ch / cw) * totalDistance;
+                const demMin = Math.min(...demValues);
+                const demMax = Math.max(...demValues);
+                const demCenter = (demMin + demMax) / 2;
+                const halfRange = Math.max(proportionalYRange / 2, (demMax - demMin) / 2 * 1.1);
+                const yMin = Math.floor(demCenter - halfRange);
+                const yMax = Math.ceil(demCenter + halfRange);
+                const yTickInterval = niceTickInterval(yMax - yMin, 5);
+
+                // 차트 표시
+                loadChartJS(() => {
+                    terrainSliceChartCanvas.style.display = 'block';
+                    const datasets = [{
+                        label: 'DEM (m)',
+                        backgroundColor: 'rgba(255,255,0,0.2)',
+                        borderColor: 'rgb(255,255,0)',
+                        data: chartPoints, fill: true, pointRadius: 0, tension: 0.3
+                    }];
+                    if (hasBuildingData && buildingTops.some(v => v !== null)) {
+                        const buildingPoints = buildingTops.map((top, i) => ({
+                            x: i * 10,
+                            y: top !== null ? top : demValues[i]
+                        }));
+                        datasets.push({
+                            label: '건물 (m)',
+                            backgroundColor: 'rgba(100,180,255,0.35)',
+                            borderColor: 'rgb(100,180,255)',
+                            data: buildingPoints, fill: true, pointRadius: 0, tension: 0,
+                            stepped: true
+                        });
+                    }
+                    const chartData = { datasets };
+                    if (window.terrainSliceChartObj) {
+                        window.terrainSliceChartObj.data = chartData;
+                        window.terrainSliceChartObj.options.scales.x.max = totalDistance;
+                        window.terrainSliceChartObj.options.scales.x.ticks.stepSize = tickInterval;
+                        window.terrainSliceChartObj.options.scales.y.min = yMin;
+                        window.terrainSliceChartObj.options.scales.y.max = yMax;
+                        window.terrainSliceChartObj.options.scales.y.ticks.stepSize = yTickInterval;
+                        window.terrainSliceChartObj.update();
+                    } else {
+                        window.terrainSliceChartObj = new Chart(terrainSliceChartCanvas, {
+                            type: 'line',
+                            data: chartData,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { labels: { color: '#ccc', font: { size: 11 } } } },
+                                scales: {
+                                    x: {
+                                        type: 'linear', min: 0, max: totalDistance,
+                                        title: { display: true, text: '거리 (m)', color: '#999' },
+                                        ticks: { color: '#999', stepSize: tickInterval },
+                                        grid: { color: '#333' }
+                                    },
+                                    y: {
+                                        min: yMin, max: yMax,
+                                        title: { display: true, text: '고도 (m)', color: '#999' },
+                                        ticks: { color: '#999', stepSize: yTickInterval },
+                                        grid: { color: '#333' }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // 카메라 배치: 시작=화면 왼쪽, 끝=화면 오른쪽, tilt 30°
+                const startPos = _path.get(0);
+                const endPos = _path.get(1);
+                const midLon = (startPos.Longitude + endPos.Longitude) / 2;
+                const midLat = (startPos.Latitude + endPos.Latitude) / 2;
+
+                // 경로 방위각 (A→B, 북=0° 시계방향)
+                const dLonM = (endPos.Longitude - startPos.Longitude) * Math.cos(midLat * Math.PI / 180) * 111320;
+                const dLatM = (endPos.Latitude - startPos.Latitude) * 111320;
+                const pathAzimuth = Math.atan2(dLonM, dLatM) * 180 / Math.PI;
+
+                // 카메라 방위각 = 경로 방위 - 90° (경로가 화면 좌→우)
+                const camAzimuth = (pathAzimuth - 90 + 360) % 360;
+
+                // tilt 30°, HFOV ~60° 기준: horizDist = totalDistance / (2 * tan(30°))
+                const tilt = 30;
+                const horizDist = totalDistance / (2 * Math.tan(30 * Math.PI / 180));
+                const camAlt = (demMax || 0) + horizDist * Math.tan(tilt * Math.PI / 180);
+
+                // 카메라 위치 = 중점에서 경로 수직방향(pathAzimuth+90°)으로 horizDist만큼 이동
+                const offsetDirRad = (pathAzimuth + 90) * Math.PI / 180;
+                const camLon = midLon + horizDist * Math.sin(offsetDirRad) / (111320 * Math.cos(midLat * Math.PI / 180));
+                const camLat = midLat + horizDist * Math.cos(offsetDirRad) / 111320;
+
+                Module.getViewCamera().move(new Module.JSVector3D(camLon, camLat, camAlt), tilt, camAzimuth, 1);
+            }
+
+            function clearTerrainSlice() {
+                ['TERRAIN_SLICE_POI', 'TERRAIN_SLICE_LINE', 'TERRAIN_SLICE_TICKS',
+                 'TERRAIN_SLICE_TICK_LINES', 'TERRAIN_SLICE_WHITE_POI', 'TERRAIN_SLICE_YELLOW_POI'].forEach(name => {
+                    const l = Module.getObjectLayerList().nameAtLayer(name);
+                    if (l) l.removeAll();
+                });
+                const l2 = new Module.JSLayerList(true).nameAtLayer('TERRAIN_SLICE_CROSS');
+                if (l2) l2.removeAll();
+            }
 
             // 그림자 시뮬레이션
             let shadowAnalysis = null;
@@ -1660,8 +2161,12 @@
                 });
             });
 
+            // 지형단면도 드래그 감지용
+            let sliceMouseDownPos = null;
+
             // 지도 클릭 시 확장 메뉴 또는 사이드바 닫기
             mapElement.addEventListener('mousedown', (e) => {
+                if (terrainSliceMode) sliceMouseDownPos = { x: e.clientX, y: e.clientY };
                 // 사이드바 영역 클릭은 제외
                 if (!e.target.closest('#sidebar')) {
                     // 확장 메뉴가 열려있는지 확인
@@ -1764,6 +2269,19 @@
                         }
 
                     cancel3DSPlacement();
+                }
+
+                // 지형단면도 모드
+                if (terrainSliceMode) {
+                    const dragged = sliceMouseDownPos &&
+                        (Math.abs(e.clientX - sliceMouseDownPos.x) > 5 || Math.abs(e.clientY - sliceMouseDownPos.y) > 5);
+                    if (!dragged) {
+                        const worldPos = Module.getMap().ScreenToMapPointEX(screen_xy);
+                        if (worldPos && worldPos.Longitude !== undefined) {
+                            handleTerrainSliceClick(worldPos);
+                        }
+                    }
+                    return;
                 }
 
                 console.log('지도 클릭:', x, y);
@@ -2317,28 +2835,31 @@
         // body 전체에 드래그 앤 드롭 적용
         const dropZone = document.body;
 
+        const dropOverlay = document.getElementById('dropOverlay');
+        let dragEnterCount = 0;
+
         // dragenter 이벤트 추가
         dropZone.addEventListener('dragenter', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Drag enter detected');
-            document.getElementById('map').classList.add('dragover');
+            dragEnterCount++;
+            dropOverlay.classList.add('active');
         }, false);
 
-        // 드래그 오버 시 기본 동작 방지 및 시각적 피드백
+        // 드래그 오버 시 기본 동작 방지
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.stopPropagation();
         }, false);
 
-        // 드래그가 영역을 떠날 때 시각적 피드백 제거
+        // 드래그가 영역을 떠날 때 오버레이 제거
         dropZone.addEventListener('dragleave', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // 완전히 떠났을 때만 제거 (자식 요소로 이동하는 경우 제외)
-            if (e.target === dropZone) {
-                console.log('Drag leave detected');
-                document.getElementById('map').classList.remove('dragover');
+            dragEnterCount--;
+            if (dragEnterCount <= 0) {
+                dragEnterCount = 0;
+                dropOverlay.classList.remove('active');
             }
         }, false);
 
@@ -2360,8 +2881,8 @@
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Drop detected');
-            document.getElementById('map').classList.remove('dragover');
+            dragEnterCount = 0;
+            dropOverlay.classList.remove('active');
 
             const files = e.dataTransfer.files;
             console.log('Dropped files:', files.length);
@@ -3290,6 +3811,9 @@
                     case "Polygon":
                     case "MultiPolygon":
                         createPolygonObjects(layer, data.features, 0.0, randomColor, strokeColor);
+                        // 단면도 분석용 폴리곤 데이터 저장
+                        window.slicePolygonData = window.slicePolygonData || {};
+                        window.slicePolygonData[fileName] = data.features;
                         break;
                 }
                 // 새 레이어 UI 생성
@@ -3358,6 +3882,7 @@
                     e.stopPropagation();
                     Module.XDEMapRemoveLayer(originalLayerName);
                     dropSqliteTable(fileName);
+                    if (window.slicePolygonData) delete window.slicePolygonData[originalLayerName];
                     layerContainer.remove();
                     mouseOverInterface(false);
                 });
@@ -4092,8 +4617,25 @@
 
                         const jsonData = JSON.parse(data);
                         const layerName = jsonData['name'];
-                        const layerPath = jsonData['path'];
+                        let layerPath = jsonData['path'];
                         const layerType = jsonData['type'];
+
+                        if (layerPath && !window.electronAPI.pathExists(layerPath)) {
+                            const sep = filePath.includes('\\') ? '\\' : '/';
+                            const fallbackPath = filePath.substring(0, filePath.lastIndexOf(sep));
+
+                            const reason = layerPath.startsWith('/')
+                                ? 'Windows 경로가 아닙니다'
+                                : '경로를 찾을 수 없습니다';
+                            if (!confirm(`${reason}.\n\n경로: ${layerPath}\n\nlayer.meta 파일 폴더 기준 경로로 시도할까요?\n\n${fallbackPath}`)) {
+                                return;
+                            }
+                            if (!window.electronAPI.pathExists(fallbackPath)) {
+                                alert(`대체 경로도 찾을 수 없습니다.\n\n경로: ${fallbackPath}`);
+                                return;
+                            }
+                            layerPath = fallbackPath;
+                        }
                         const minLon = jsonData['area']['min']['lon'];
                         const maxLon = jsonData['area']['max']['lon'];
                         const minLat = jsonData['area']['min']['lat'];
@@ -4110,14 +4652,16 @@
                             type = Module.TILE_LAYER_TYPE_IMAGE;
                             alt = 5000;
                         }
-                        if (layerType == "ETLT_VECTOR_PIPE") {
+                        else if(layerType == "ETLT_TERRAIN_IMAGE"){
+                            type = Module.ELT_TERRAIN_IMAGE;
+                            alt = 5000;
+                        }
+                        else if (layerType == "ETLT_VECTOR_PIPE") {
                             type = Module.TILE_LAYER_TYPE_VECTOR_PIPE;
                             alt = 500;
-                        }
-                        if (layerType == "ETLT_REAL3D") {
+                        }else if (layerType == "ETLT_REAL3D") {
                             type = Module.TILE_LAYER_TYPE_REAL3D;
-                        }
-                        if (layerType == "ETLT_BASE_DEM") {
+                        }else if (layerType == "ETLT_BASE_DEM") {
                             var terrain = Module.getTerrain();
                             terrain.SetUseDemBox(true);
                             terrain.setDemBox({

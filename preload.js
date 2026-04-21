@@ -116,6 +116,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
   openExternal: (url) => shell.openExternal(url),
-  getLocalFileUrl: (filePath) => ipcRenderer.invoke('get-local-file-url', filePath)
+  getLocalFileUrl: (filePath) => ipcRenderer.invoke('get-local-file-url', filePath),
+  pathExists: (dirPath) => fs.existsSync(dirPath)
 
 });
