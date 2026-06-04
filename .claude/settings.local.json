@@ -7,7 +7,12 @@
       "WebFetch(domain:sandbox.egiscloud.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:cdn.xdworld.kr)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(curl -sk \"https://sandbox.egiscloud.com/assets/samples/terrain_rendermode/script2.js\")",
+      "Bash(curl -sk \"https://sandbox.egiscloud.com/assets/samples/terrain_rendermode/index.html\")",
+      "Bash(curl -sk \"https://sandbox.egiscloud.com/code/main.do?id=terrain_dem_slice\" -o /tmp/slice_page.html)",
+      "Read(//tmp/**)"
     ]
   }
 }

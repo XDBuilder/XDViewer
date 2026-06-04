@@ -645,7 +645,37 @@
 
  .dragover {
      box-shadow: 0 0 0 2px #00aaff;
-     /* 드래그 시 외곽선 색상 변경 */
+ }
+
+ #dropOverlay {
+     display: none;
+     position: fixed;
+     inset: 0;
+     z-index: 9999;
+     background: rgba(0, 140, 255, 0.12);
+     border: 2px dashed #00aaff;
+     pointer-events: none;
+     align-items: center;
+     justify-content: center;
+ }
+
+ #dropOverlay.active {
+     display: flex;
+ }
+
+ .drop-overlay-content {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 14px;
+     color: #00aaff;
+     background: rgba(10, 20, 40, 0.75);
+     border-radius: 16px;
+     padding: 36px 52px;
+     backdrop-filter: blur(6px);
+     font-size: 16px;
+     font-weight: 500;
+     letter-spacing: 0.02em;
  }
 
  .layer-item {
@@ -1338,8 +1368,9 @@
     left: 0;
     width: 100%;
     height: 250px;
-    background-color: #1e1e1e;
-    border-top: 1px solid #3c3c3c;
+    background-color: rgba(18, 18, 18, 0.75);
+    border-top: 1px solid rgba(60, 60, 60, 0.6);
+    backdrop-filter: blur(6px);
     z-index: 2000;
     display: none;
     flex-direction: column;
@@ -1396,6 +1427,27 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 0 4px;
+}
+
+.bottom-panel-tab {
+    font-size: 11px;
+    font-weight: 600;
+    color: #858585;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 8px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    line-height: 30px;
+}
+
+.bottom-panel-tab:hover {
+    color: #cccccc;
+}
+
+.bottom-panel-tab.active {
+    color: #ffffff;
+    border-bottom-color: #007acc;
 }
 
 #bottom-panel-actions {

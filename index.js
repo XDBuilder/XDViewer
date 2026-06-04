@@ -45,6 +45,15 @@ autoUpdater.autoInstallOnAppQuit = true;
 /** 메인 창 생성 */
 function createWindow() {
 
+    // 1. GPU 강제 활성화
+    app.commandLine.appendSwitch('ignore-gpu-blacklist');
+    app.commandLine.appendSwitch('enable-gpu-rasterization');
+    app.commandLine.appendSwitch('enable-zero-copy');
+    app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
+
+    // 2. 메모리 확장
+    app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
+
     // 브라우저 창 생성
     mainWindow = new BrowserWindow({
         width:  1024, // 창 너비
@@ -52,6 +61,8 @@ function createWindow() {
         title: `XDViewer v${app.getVersion()}`, // 타이틀바에 버전 표시
         autoHideMenuBar: true, // 메뉴바 자동 숨김
         webPreferences: {
+            webgl: true,
+            backgroundThrottling: false,
             nodeIntegration: false, // Node.js 통합 비활성화
             contextIsolation: true, // 컨텍스트 격리 활성화
             preload: path.join(__dirname, 'preload.js'), // 프리로드 스크립트 경로
@@ -115,7 +126,14 @@ app.whenReady().then(() => {
             callback({});
         }
     });
-
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+            ...details.responseHeaders,
+            'Access-Control-Allow-Origin': ['*']
+            }
+        });
+    });
     // 자동 업데이트 체크 (프로덕션 환경에서만)
     if (app.isPackaged) {
         autoUpdater.checkForUpdatesAndNotify();
