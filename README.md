@@ -118,7 +118,7 @@ nvm을 사용하면 여러 버전의 Node.js를 쉽게 관리하고, 버전을 �
 ```
 ## 🚀 5. **빌드방법**
 ```bash
-$ git clone https://github.com/XDBuilder/XDViewer.git
+$ git clone https://github.com/iyeti78/XDViewer.git
 $ cd XDViewer
 $ npm install
 $ npm start

@@ -38,7 +38,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "XDBuilder",
+        "owner": "iyeti78",
         "repo": "XDViewer"
       }
     ],
