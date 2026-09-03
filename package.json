@@ -1,6 +1,6 @@
 {
   "name": "XDViewer",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "데이터 시각화를 로컬에서 하기위한 일렉트론 기반의 프로젝트 입니다.",
   "main": "index.js",
   "author": {
@@ -20,6 +20,21 @@
   "build": {
     "appId": "com.egiskorea.xdviewer",
     "productName": "XDViewer",
+    "files": [
+      "**/*",
+      "!data/**",
+      "!dist/**",
+      "!image.png",
+      "!XDWorld-main.zip"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "meta",
+        "name": "XDWorld Layer",
+        "description": "XDWorld Layer Metadata",
+        "role": "Viewer"
+      }
+    ],
     "publish": [
       {
         "provider": "github",

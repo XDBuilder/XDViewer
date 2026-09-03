@@ -755,6 +755,23 @@
     pointer-events: none;
 }
 
+/* 레이어 종류 아이콘 (영상/지형/벡터/3D...) — span 규칙(flex:1, ellipsis)에 걸리지 않게 <i> 사용 */
+.layer-item .layer-icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.85;
+}
+
+.layer-item .layer-icon svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+}
+
 /* 컨텍스트 메뉴가 열린 레이어 강조 (.layer-item용) */
 .layer-item.context-menu-active {
     background-color: #2d2d30;

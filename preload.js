@@ -117,6 +117,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openExternal: (url) => shell.openExternal(url),
   getLocalFileUrl: (filePath) => ipcRenderer.invoke('get-local-file-url', filePath),
-  pathExists: (dirPath) => fs.existsSync(dirPath)
+  pathExists: (dirPath) => fs.existsSync(dirPath),
+  isDirectory: (p) => {
+    try {
+      return fs.statSync(p).isDirectory();
+    } catch (err) {
+      return false;
+    }
+  },
+  listDir: (p) => {
+    try {
+      return fs.readdirSync(p);
+    } catch (err) {
+      return [];
+    }
+  },
+  // 영상 소스 등록 -> 엔진에 넘길 로컬 HTTP layerPath (타일은 요청 시 생성)
+  registerImageSource: (opts) => ipcRenderer.invoke('register-image-source', opts),
+  unregisterImageSource: (id) => ipcRenderer.invoke('unregister-image-source', id)
 
 });
