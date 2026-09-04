@@ -294,8 +294,20 @@ function pngSize(buf) {
  * 반환: { getTile(L, idx, idy) -> Buffer|null, close(),
  *         info: { kind: 'imagery'|'terrain', schema, format, bounds, minL, maxL, tileSize } }
  */
+/**
+ * 타일 DB 열기. terra-gen sdb/gpkg는 WAL 모드로 저장되는데, WAL DB는 읽기만 해도 SQLite가 옆에 -shm/-wal
+ * 파일을 만들어야 해서 읽기 전용 폴더(네트워크 공유 등)에서는 쿼리 시점에 "unable to open database file"이 난다.
+ * 그래서 `file:…?immutable=1` URI로 열어 잠금·shm 없이 읽는다(타일 패키지는 열람 중 바뀌지 않는다고 본다).
+ * 단, -wal 사이드카가 실제로 있으면 아직 체크포인트 안 된 내용이 있을 수 있어 일반 모드로 연다.
+ */
+function openTileDbFile(file) {
+    if (fs.existsSync(file + '-wal')) return new DatabaseSync(file, { readOnly: true });
+    const uri = 'file:' + file.replace(/\\/g, '/').split('/').map(encodeURIComponent).join('/') + '?immutable=1';
+    return new DatabaseSync(uri, { readOnly: true });
+}
+
 function openTileDb(file) {
-    const db = new DatabaseSync(file, { readOnly: true });
+    const db = openTileDbFile(file);
     const num = (v) => (typeof v === 'bigint' ? Number(v) : v);
     try {
         const tables = new Set(db.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all().map(r => r.name));
@@ -371,10 +383,13 @@ function openTileDb(file) {
 
         if (!bounds) throw new Error('타일 범위(bounds)를 알 수 없습니다 (gpkg_contents 또는 metadata.bounds 필요)');
 
-        // 실제 들어있는 레벨 범위 (tile_matrix 선언과 다를 수 있어 데이터 기준)
-        const lv = db.prepare(`SELECT MIN(${zoomCol}) mn, MAX(${zoomCol}) mx FROM "${tileTable}"`).get();
-        if (lv.mn == null) throw new Error('타일이 비어 있습니다');
-        const minL = num(lv.mn), maxL = num(lv.mx);
+        // 실제 들어있는 레벨 범위 (tile_matrix 선언과 다를 수 있어 데이터 기준).
+        // MIN과 MAX를 한 문장에 쓰면 SQLite가 인덱스 전체를 스캔한다(집계가 하나일 때만 끝점 조회로 최적화).
+        // 320GB 전구 sdb를 네트워크로 열 때 252초가 걸려 앱이 "응답 없음"이 났으므로 반드시 두 문장으로 나눈다.
+        const lvMin = db.prepare(`SELECT MIN(${zoomCol}) v FROM "${tileTable}"`).get();
+        const lvMax = db.prepare(`SELECT MAX(${zoomCol}) v FROM "${tileTable}"`).get();
+        if (lvMin.v == null) throw new Error('타일이 비어 있습니다');
+        const minL = num(lvMin.v), maxL = num(lvMax.v);
 
         // blob 하나를 떠서 포맷 판정. png/jpg = 영상(엔진은 png만 읽으므로 jpg는 요청 시 변환), gzip = bil 지형
         const sample = db.prepare(`SELECT ${dataCol} d FROM "${tileTable}" WHERE ${zoomCol} = ? LIMIT 1`).get(maxL);

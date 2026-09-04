@@ -3154,9 +3154,14 @@
             const kindLabel = isTerrain ? '지형' : kind === 'coverage' ? '표고 회색조 영상' : '영상';
             console.log(`타일 DB 등록: ${name} (${kindLabel}, ${schema}, ${format}, level ${minL}~${maxL})\n${src.url}`);
 
+            // 전구(또는 반구 이상) 범위 데이터는 중심(0,0 부근 바다)으로 카메라를 옮기는 게 무의미하므로 현재 시점을 유지
+            const keepCamera = (east - west) >= 180;
+            if (keepCamera) console.log(`범위가 ${(east - west).toFixed(0)}°라 카메라를 이동하지 않습니다 (${name})`);
+
             // layer.meta 없이 메타 객체를 만들어 기존 경로(영상 레이어 / ETLT_BASE_DEM demBox)로 로드
             loadMetaLayer(filePath, {
                 pathOverride: src.url,
+                keepCamera: keepCamera,
                 meta: {
                     name: name,
                     path: src.url,
@@ -5046,6 +5051,7 @@
         }
         // opts.meta        : layer.meta 파일 대신 쓸 메타 객체
         // opts.pathOverride: 엔진에 넘길 layerPath (로컬 HTTP URL 등)
+        // opts.keepCamera  : true면 레이어 중심으로 카메라를 옮기지 않음 (전구 범위 DEM 등)
         function loadMetaLayer(filePath, opts = {}) {
             const source = opts.meta
                 ? Promise.resolve(JSON.stringify(opts.meta))
@@ -5134,7 +5140,8 @@
                                 }
                             });
                             Module.XDRenderData();
-                            Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);
+                            Module.XDEPlanetRefresh(); // demBox 교체를 지형에 반영 (카메라를 안 움직이면 이게 없으면 기존 지형이 그대로 남는다)
+                            if (!opts.keepCamera) Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);
 
                             // 레이어 패널에 추가
                             const layerItem = document.createElement('div');
@@ -5185,7 +5192,7 @@
                             return;
                         }
                         Module.XDEMapCreateLayer(layerName, layerPath, 0, true, true, true, type, minLv, maxLv);
-                        Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);
+                        if (!opts.keepCamera) Module.getViewCamera().move(new Module.JSVector3D(cenLon, cenLat, alt), 89.9, 0, 0);
                         layer = layerList.nameAtLayer(layerName);
 
                         if (layer != null) {
