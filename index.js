@@ -470,6 +470,58 @@ async function renderCoverageTile(src, L, idx, idy) {
     return any ? encodePng(256, 256, 6, rgba) : null;
 }
 
+// ============ 지형 타일 폴백 (상위 레벨에서 잘라 만들기) ============
+//
+// terra-gen 전구 DEM은 바다처럼 평탄한 곳의 상세 레벨(8+) 타일을 생략한다. 엔진은 옆 타일(육지)은 받고
+// 자기 타일은 404를 받으면 메시를 이어붙이지 못해 검은 쐐기 모양 이격이 생긴다(하와이 실측).
+// 그래서 없는 타일은 가장 가까운 상위 타일의 해당 구간을 이중선형 보간해 응답한다.
+// bil 타일 실측: gzip(65x65 float32 LE), 행 0 = 북쪽, 모서리 공유(64 간격). idy는 남쪽 원점.
+// cop30 실측: 상위 레벨(≤7) 바다는 수심(-4,700m 안팎)이고 상세 레벨(≥8) 해안 타일의 바다는 0m라,
+// 합성 타일을 그대로 붙이면 타일 경계에 수 km 절벽(검은 쐐기)이 선다. 합성 타일은 음수를 0(해면)으로 누른다.
+// (상세 타일이 생략된 곳은 바다이므로 해면 아래 육지(사해 등)가 잘릴 일은 없다)
+const DEM_N = 65;
+
+function synthesizeDemTile(src, L, idx, idy, maxUp = 6) {
+    for (let k = 1; k <= maxUp && L - k >= 0; k++) {
+        const f = 2 ** k;
+        const pIdx = Math.floor(idx / f), pIdy = Math.floor(idy / f);
+        const blob = src.db.getTile(L - k, pIdx, pIdy);
+        if (!blob) continue;
+
+        let parent;
+        try {
+            const u = zlib.gunzipSync(blob);
+            if (u.length !== DEM_N * DEM_N * 4) return null;
+            parent = new Float32Array(u.buffer, u.byteOffset, DEM_N * DEM_N);
+        } catch (_) {
+            return null;
+        }
+
+        // 자식이 차지하는 부모 샘플 구간: 폭 span, x 시작 ox, 북쪽 기준 행 시작 oyTop
+        const span = (DEM_N - 1) / f;
+        const ox = (idx - pIdx * f) * span;
+        const oyTop = (DEM_N - 1) - (idy - pIdy * f) * span - span;
+        const out = new Float32Array(DEM_N * DEM_N);
+        for (let r = 0; r < DEM_N; r++) {
+            const fy = oyTop + r * span / (DEM_N - 1);
+            const y0 = Math.min(DEM_N - 2, Math.floor(fy)), ty = fy - y0;
+            for (let c = 0; c < DEM_N; c++) {
+                const fx = ox + c * span / (DEM_N - 1);
+                const x0 = Math.min(DEM_N - 2, Math.floor(fx)), tx = fx - x0;
+                const a = parent[y0 * DEM_N + x0], b = parent[y0 * DEM_N + x0 + 1];
+                const cc = parent[(y0 + 1) * DEM_N + x0], d = parent[(y0 + 1) * DEM_N + x0 + 1];
+                // nodata(-32768 등)가 섞이면 보간하지 않고 최근접 값
+                const v = (a <= -30000 || b <= -30000 || cc <= -30000 || d <= -30000)
+                    ? parent[Math.round(fy) * DEM_N + Math.round(fx)]
+                    : (a * (1 - tx) + b * tx) * (1 - ty) + (cc * (1 - tx) + d * tx) * ty;
+                out[r * DEM_N + c] = v < 0 ? 0 : v;
+            }
+        }
+        return zlib.gzipSync(Buffer.from(out.buffer, out.byteOffset, out.byteLength));
+    }
+    return null;
+}
+
 function ensureLocalFileServer() {
     if (localFileServer) return Promise.resolve(localFileServerPort);
 
@@ -527,8 +579,21 @@ function ensureLocalFileServer() {
                     return res.end(m ? 'Unknown terrain source' : 'Bad terrain tile path');
                 }
                 const L = Number(m[2]), idy = Number(m[3]), idx = Number(m[4]);
-                const blob = src.db.getTile(L, idx, idy);
-                if (process.env.XDREQ_DEBUG) console.log(`[srv] ${blob ? '200' : '404'} xddem ${m[1]}/${L}/${idy}/${idx}`);
+                let blob = src.db.getTile(L, idx, idy);
+                let synthesized = false;
+                if (!blob) {
+                    // 없는 타일은 상위 레벨에서 만들어 준다 (결과는 null 포함 캐시)
+                    const key = `dem/${L}/${idy}/${idx}`;
+                    if (src.cache.has(key)) {
+                        blob = src.cache.get(key);
+                    } else {
+                        blob = synthesizeDemTile(src, L, idx, idy);
+                        if (src.cache.size >= 512) src.cache.delete(src.cache.keys().next().value);
+                        src.cache.set(key, blob);
+                    }
+                    synthesized = !!blob;
+                }
+                if (process.env.XDREQ_DEBUG) console.log(`[srv] ${blob ? (synthesized ? '200*' : '200') : '404'} xddem ${m[1]}/${L}/${idy}/${idx}`);
                 if (!blob) {
                     res.writeHead(404);
                     return res.end('No data');
